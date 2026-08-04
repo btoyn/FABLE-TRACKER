@@ -54,6 +54,72 @@ export async function getLendersWithCoverage(): Promise<LenderWithCoverage[]> {
   );
 }
 
+export interface NavCounts {
+  followUps: number;
+  needsAttention: number;
+}
+
+/**
+ * Counts for the sidebar badges (§8). Deliberately lighter than
+ * getLendersWithCoverage — no joins, no ordering — because the app layout
+ * runs this on every page.
+ */
+export async function getNavCounts(): Promise<NavCounts> {
+  const supabase = await createClient();
+  const nowIso = new Date().toISOString();
+
+  const [openPromises, openTasks, wokenTasks, { data: lenders }, { data: coverage }, prefs] =
+    await Promise.all([
+      supabase
+        .from("promises")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open")
+        .is("deleted_at", null),
+      supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open")
+        .is("deleted_at", null),
+      supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "snoozed")
+        .lte("snoozed_until", nowIso)
+        .is("deleted_at", null),
+      supabase.from("lenders").select("id, active").is("deleted_at", null),
+      supabase.from("lender_coverage").select("*"),
+      getPreferences(),
+    ]);
+
+  const opts = {
+    goalDays: prefs?.default_contact_goal_days ?? 30,
+    graceDays: prefs?.contact_grace_days ?? 10,
+  };
+  const byLender = new Map<string, CoverageRow>(
+    (coverage ?? []).map((c: CoverageRow) => [c.lender_id, c]),
+  );
+
+  const needsAttention = (lenders ?? []).filter((l) => {
+    if (!l.active) return false;
+    const c = byLender.get(l.id);
+    return (
+      lenderCoverage(
+        {
+          lastVisibleTouchAt: c?.last_visible_touch_at ?? null,
+          lastPersonalTouchAt: c?.last_personal_touch_at ?? null,
+          hasConfirmedFutureMeeting: c?.has_confirmed_future_meeting ?? false,
+        },
+        opts,
+      ).personal !== "on_track"
+    );
+  }).length;
+
+  return {
+    followUps: (openPromises.count ?? 0) + (openTasks.count ?? 0) + (wokenTasks.count ?? 0),
+    needsAttention,
+  };
+}
+
 /** Seed the demo workspace for brand-new accounts (spec §14). */
 export async function ensureSampleData(): Promise<void> {
   const supabase = await createClient();

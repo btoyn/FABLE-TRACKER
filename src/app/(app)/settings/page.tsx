@@ -1,5 +1,8 @@
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getFlags } from "@/lib/flags";
@@ -72,6 +75,21 @@ export default async function SettingsPage() {
                   : "Off. Add a Resend API key to receive the daily digest by email. Reminders still show in the app."
               }
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Import a lender list</CardTitle>
+            <CardDescription>
+              Bring in a spreadsheet of lenders. You&apos;ll review the column mapping and any
+              duplicates before anything is saved.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/import" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              <Upload className="h-4 w-4" /> Open import wizard
+            </Link>
           </CardContent>
         </Card>
 

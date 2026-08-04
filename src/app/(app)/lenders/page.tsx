@@ -16,6 +16,7 @@ export const metadata = { title: "Lenders" };
 
 const VIEWS: { key: string; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "on_track", label: "On track" },
   { key: "needs_contact", label: "Needs contact" },
   { key: "no_personal_touch", label: "No personal touch" },
   { key: "campaign_only", label: "Campaign-only" },
@@ -51,6 +52,10 @@ function applyView(
   sets: { activeLoanLenders: Set<string>; overduePromiseLenders: Set<string> },
 ): LenderWithCoverage[] {
   switch (view) {
+    case "on_track":
+      return lenders.filter(
+        (l) => l.coverage.personal === "on_track" && !l.coverage.hasConfirmedFutureMeeting,
+      );
     case "needs_contact":
       return lenders.filter((l) =>
         ["grace", "overdue", "seriously_overdue", "never_contacted"].includes(l.coverage.visible),

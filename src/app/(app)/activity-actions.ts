@@ -45,10 +45,38 @@ export async function logActivity(input: LogActivityInput): Promise<{ error?: st
   });
   if (error) return { error: error.message };
 
+  // Reaching out closes the loop on this week's plan, so the dashboard's
+  // weekly progress bar reflects real work rather than manual ticking (§6).
+  if (isPersonalTouch(input.activityType)) {
+    const { data: plan } = await supabase
+      .from("weekly_relationship_plans")
+      .select("id")
+      .eq("week_start", currentWeekStart())
+      .maybeSingle();
+
+    if (plan) {
+      await supabase
+        .from("weekly_relationship_plan_items")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("plan_id", plan.id)
+        .eq("lender_id", input.lenderId)
+        .eq("status", "open");
+    }
+  }
+
   revalidatePath(`/lenders/${input.lenderId}`);
   revalidatePath("/lenders");
   revalidatePath("/dashboard");
   return {};
+}
+
+/** Monday of the current week, matching the weekly plan key. */
+function currentWeekStart(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay();
+  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  return d.toISOString().slice(0, 10);
 }
 
 export async function addPromise(input: {

@@ -22,6 +22,8 @@ export interface Lender {
   preferred_contact_method: string | null;
   active: boolean;
   do_not_contact: boolean;
+  unsubscribed: boolean;
+  email_bounced: boolean;
   needs_enrichment: boolean;
   next_follow_up_at: string | null;
   notes: string | null;

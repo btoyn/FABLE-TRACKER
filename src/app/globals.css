@@ -14,6 +14,15 @@
   --primary-soft: #eef2fd;
   --primary-foreground: #ffffff;
 
+  /* Subtle blue-gray chrome for the sidebar (§8) */
+  --sidebar: #f2f4f9;
+  --sidebar-border: #e2e6f0;
+
+  /* Soft royal-blue banner gradient (§1) — deep enough for white text */
+  --banner-from: #2b4fc2;
+  --banner-via: #3760cf;
+  --banner-to: #557fe0;
+
   --success: #157f3d;
   --success-soft: #e9f6ee;
   --warning: #a16207;
@@ -32,6 +41,11 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-banner-from: var(--banner-from);
+  --color-banner-via: var(--banner-via);
+  --color-banner-to: var(--banner-to);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -46,4 +60,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings carry the hierarchy, so tighten them a touch (§9). */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
 }
