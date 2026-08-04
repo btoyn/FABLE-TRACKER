@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, HandCoins, Send, Sparkles, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,15 +81,20 @@ export function HeroHeader({
 
   return (
     <section className="mb-5">
-      <div
-        className="relative overflow-hidden rounded-[22px] bg-navy shadow-[var(--shadow-hero)]"
-        style={{
-          backgroundImage: "url('/images/mountain-sunrise-header.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "right 28%",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
+      <div className="relative overflow-hidden rounded-[22px] bg-navy shadow-[var(--shadow-hero)]">
+        {/* The photograph. Served through next/image so the 2172px original is
+            re-encoded and resized per device instead of shipping ~1.7MB to every
+            visitor. Cover-cropped with the peak and sun held toward the right. */}
+        <Image
+          src="/images/mountain-sunrise-header.png"
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 92vw, 1120px"
+          className="object-cover"
+          style={{ objectPosition: "70% 12%" }}
+        />
+
         {/* Overlay: dense navy on the left for text, royal blue through the middle,
             thinning to the right so the peak and sunlight stay visible. */}
         <div
@@ -96,7 +102,7 @@ export function HeroHeader({
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(100deg, rgba(20,35,74,0.96) 0%, rgba(23,42,96,0.93) 28%, rgba(49,87,213,0.72) 55%, rgba(49,87,213,0.34) 76%, rgba(49,87,213,0.12) 100%)",
+              "linear-gradient(100deg, rgba(20,35,74,0.96) 0%, rgba(22,40,92,0.92) 30%, rgba(43,76,190,0.66) 56%, rgba(49,87,213,0.26) 78%, rgba(49,87,213,0.06) 100%)",
           }}
         />
         {/* A touch of warmth pulled from the sunrise, kept very low */}
@@ -105,11 +111,11 @@ export function HeroHeader({
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 82% 30%, rgba(216,168,78,0.20) 0%, rgba(216,168,78,0) 46%)",
+              "radial-gradient(circle at 84% 34%, rgba(216,168,78,0.14) 0%, rgba(216,168,78,0) 42%)",
           }}
         />
 
-        <div className="relative flex min-h-[230px] flex-col gap-6 p-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+        <div className="relative flex min-h-[230px] flex-col gap-5 p-5 sm:gap-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
           {/* Zone 1 + 2 — greeting, summary, actions, status chips */}
           <div className="min-w-0 flex-1">
             <h1 className="text-[27px] font-bold leading-tight text-white sm:text-[32px]">
@@ -140,13 +146,14 @@ export function HeroHeader({
             </div>
 
             {chips.length > 0 && (
-              <ul className="mt-5 flex flex-wrap gap-2">
+              /* One scrolling row on phones so three chips don't cost three lines. */
+              <ul className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:mt-5 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
                 {chips.map((chip) => {
                   const Icon = CHIP_ICONS[chip.icon];
                   return (
                     <li
                       key={chip.label}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-3 py-1.5 text-[12.5px] font-medium text-white backdrop-blur-sm"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-2.5 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm sm:px-3 sm:text-[12.5px]"
                     >
                       <Icon className="h-3.5 w-3.5 opacity-90" />
                       {chip.label}
@@ -165,10 +172,10 @@ export function HeroHeader({
 
           {/* Zone 3 — frosted coverage panel */}
           <div className="shrink-0 self-start lg:self-center">
-            <div className="flex items-center gap-4 rounded-2xl border border-white/25 bg-white/[0.13] p-4 backdrop-blur-md sm:gap-5 sm:p-5">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-white/25 bg-white/[0.13] p-3.5 backdrop-blur-md sm:gap-5 sm:p-5">
               <CoverageRing value={coveragePct} />
               <div className="text-white">
-                <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white/75">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/75 sm:text-[13px]">
                   Personal coverage
                 </p>
                 <p className="mt-1 text-[15px] font-medium">

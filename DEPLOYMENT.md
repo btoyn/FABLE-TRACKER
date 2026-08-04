@@ -39,19 +39,12 @@ plan — still well inside the spec's $50/mo budget.
 3. Deploy. Visit the URL — you should see the login screen, not the setup
    notice.
 
-## 2b. Dashboard hero image (1 min)
+## 2b. Dashboard hero image — done
 
-The dashboard hero expects a photograph at:
-
-```
-public/images/mountain-sunrise-header.png
-```
-
-Drop the mountain-sunrise file there, commit, and push — no code changes needed.
-The hero is cover-cropped with the peak and sun toward the right and carries a
-navy → royal-blue overlay for text contrast. Until the file exists the hero
-renders the gradient alone, which is a complete look on its own, so nothing
-breaks either way. A wide image works best (roughly 2000×650 or wider).
+The hero photograph lives at `public/images/mountain-sunrise-header.png`
+(2172×724). It is served through `next/image`, so the 1.7 MB source is
+re-encoded and resized per device — about 37 KB of WebP on a desktop and 9 KB on
+a phone. To swap the picture later, replace that file; no code changes needed.
 
 ## 3. First run
 
