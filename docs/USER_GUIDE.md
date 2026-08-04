@@ -1,179 +1,105 @@
 # Lender CRM — Working Guide
 
-One relationship system for roughly 120 commercial lenders. It exists to answer a single
-question — *who is slipping?* — and to make doing something about it take five minutes a day
-rather than an afternoon.
+One system for ~120 commercial lenders. It answers one question — *who is slipping?* — in five
+minutes a day. Live at `fable-tracker.vercel.app`.
 
-Live at `fable-tracker.vercel.app`. A styled version of this guide is published as an artifact;
-this file is the copy that travels with the code.
+## How coverage works
 
----
+The app keeps a running clock on every lender, counting from the last time you actually spoke —
+never a calendar reset. Past the line, they surface. Inside it, they stay out of your way. You never
+decide who to call; the app ranks them worst-first and tells you why.
 
-## The one idea
-
-You cannot hold 120 relationships in your head. What you *can* do is make sure nobody goes more
-than about a month without hearing from you personally — and that when you do reach out, you
-remember what matters to them.
-
-So the CRM keeps a running clock on every lender. It never resets on the first of the month; it's
-always counting from the last time you actually spoke. When someone drifts past the line, they
-surface. When they're fine, they stay out of your way.
-
-You should never have to decide who to call. The app decides, ordered worst-first, and tells you
-why.
-
-## The 30-day clock
-
-| State | Days since personal contact | Meaning |
+| State | Days since personal contact | |
 |---|---|---|
-| On track | 0–30 | Spoken within the goal window. Nothing to do. |
-| Grace period | 31–40 | Just past the line. Still easy to recover. |
-| Overdue | 41–60 | A real gap. They're in your queue. |
-| Seriously overdue | 61+ | These lead the weekly list. |
-| Never contacted | — | Imported but never personally reached. Same urgency as overdue. |
+| On track | 0–30 | Nothing to do |
+| Grace period | 31–40 | Just past the line |
+| Overdue | 41–60 | A real gap |
+| Seriously overdue | 61+ | Leads the weekly list |
+| Never contacted | — | Same urgency as overdue |
 
-Both the goal window and the grace period are adjustable in Settings; 30 and 10 are defaults.
+- Goal window and grace are adjustable in Settings — 30 and 10 are defaults.
+- **A confirmed future meeting covers a lender the moment you book it.** Cancel it and the clock
+  silently resumes from your last real conversation.
 
-**Booking a meeting covers someone immediately.** A confirmed lunch three weeks out stops that
-lender showing as overdue today. If the meeting is cancelled, the clock goes back to counting from
-your last real conversation.
+### Two clocks per lender
 
-## Two kinds of contact
+**Overall** counts anything that reached them, mass email included. **Personal** counts one-to-one
+only. Send a newsletter to 80 lenders and their overall clock resets while personal keeps counting —
+the app calls that **Campaign only** and treats it as the gap it is. Every headline number runs on
+the *personal* clock.
 
-Every lender carries two clocks:
+- **Counts as personal:** calls, texts, emails you wrote, inbound emails, lunch, breakfast, golf,
+  office visits, pop-ins, SBA questions, deal conversations, loan updates.
+- **Doesn't:** campaign email (overall only), drop-offs where nobody talked to you, notes to
+  yourself.
 
-- **Overall contact** — anything that reached them, mass email included.
-- **Personal contact** — one-to-one only: a call, a text, an email you wrote, a lunch, a pop-in,
-  an SBA question they asked you.
-
-Send a newsletter to 80 lenders and their overall clock resets while their personal clock keeps
-counting. The app calls that **Campaign only** and treats it as a gap, because it is one. Every
-headline number — the ring, the percentage, the weekly list — runs on the *personal* clock.
-
-**Counts as personal:** calls, texts, personal emails, inbound emails, lunch, breakfast, golf,
-office visits, pop-ins, SBA questions, deal conversations, weekly loan updates.
-
-**Does not count:** campaign email (overall only), drop-offs where nobody talked to you, notes you
-write to yourself.
-
----
-
-## Every morning — about 5 minutes
+## Every morning — 5 minutes
 
 The dashboard is ordered by urgency. Read down.
 
-1. **Read the blue banner.** One sentence covering overdue promises, loan updates due, meeting
-   notes to capture, and how many people are on this week's list. The ring is your personal
-   coverage percentage. If it says you're caught up, you are.
+1. **The blue banner** — one sentence of what's outstanding, plus your personal coverage ring. If it
+   says you're caught up, you are.
+2. **Today's attention** — three kinds of item, urgent first, one button each: *promises* past their
+   date → **Mark done**; *loan updates due* → **Log update** records it and pushes the next out a
+   week; *meeting notes* → **Capture notes** opens a box inline. Write notes while they're fresh —
+   everything downstream comes from that box.
+3. **The right rail** — confirmed meetings, whether each brief is prepared, your next trip, and
+   anything **waiting on a reply** so tentative invitations don't quietly die.
 
-2. **Clear Today's attention.** Three kinds of item, urgent first, one button each:
-   - *Promises* — something owed in either direction, past its date → **Mark done**
-   - *Loan updates due* — an active loan hasn't had its weekly touch → **Log update** records it
-     and pushes the next one out a week
-   - *Meeting notes* — a meeting happened and nothing was written down → **Capture notes** opens a
-     box inline
+### The four cards — each links to the list behind it
 
-   Write the notes while they're fresh. Everything downstream comes out of that box.
+| Card | What it tells you |
+|---|---|
+| Personal coverage | Share of active lenders with a real one-to-one touch inside the window, plus the change since last week. The number to care about. |
+| Meetings | Confirmed meetings ahead, when the next is, how many await notes. |
+| Weekly loan communication | Reads as `3/5`. Every active loan gets a weekly touch *even when nothing changed* — silence is what makes referral partners nervous. |
+| Annual SBA approvals | Approvals year to date against goal, with dollars and the gap remaining. |
 
-3. **Glance at the right-hand rail.** Confirmed meetings, whether a brief is prepared, your next
-   trip, and anything **waiting on a reply** — that's where tentative invitations sit so they don't
-   quietly die.
+Below those: an **eight-week coverage line**, rebuilt from your activity on every page load (so
+backdating a logged call redraws history honestly), and a **status bar** where every band and legend
+row links to that exact list.
 
-### What the four cards mean
+## Every Monday — 20 minutes
 
-Each card links to the filtered list behind it.
+Press **Start weekly outreach** once a week. The app ranks everyone by who's slipping furthest,
+builds ten with ten more on deck, and shows the first five. Each row carries their bank, territory,
+days since you spoke, **why now**, and a **suggested action** matched to how they prefer to be
+contacted.
 
-- **Personal coverage** — share of active lenders with a real one-to-one touch inside the window,
-  plus the change since last week. This is the number to care about.
-- **Meetings** — confirmed meetings ahead, when the next is, how many await notes.
-- **Weekly loan communication** — reads as `3/5`. Every active loan gets a weekly touch *even when
-  nothing changed*, because silence is what makes referral partners nervous.
-- **Annual SBA approvals** — approvals year to date against goal, with dollars and the gap.
+You don't tick anything off — **logging a touch closes the row automatically** and fills the progress
+bar. **View all** reveals the rest. Ten is the plan; five is what fits in a sitting.
 
-Below those: an **eight-week coverage line**, rebuilt from your activity every page load (so
-backdating a logged call redraws history honestly), and a **relationship status bar** where every
-band and legend row links to that exact list.
+| Button | What it does |
+|---|---|
+| Draft email | Opens Outlook addressed to them. You send it as yourself so replies land in your normal thread history; the app then asks whether it went out and logs it. It deliberately never sends lender mail on your behalf — system-address mail reads as bulk and hurts deliverability. |
+| Text | Opens Messages with their number, then offers to log it. |
+| Schedule | Places a **tentative hold** — type, time, optional location. Stays tentative until they reply and sits under *Waiting on replies*. Durations default: lunch and breakfast 60 min, golf 150, office visits and pop-ins 15. |
+| Replace | Drops them from this week and promotes the next lender on deck into the slot. Nothing is deleted — you're saying "not now." |
 
----
+## As it happens — the four habits
 
-## Every Monday — about 20 minutes
+**Log the touch.** Profile → *Log activity*: what happened, when, one line of summary. Tick *they
+reached out to me* if they started it — inbound contact is a real health signal. Logging resets the
+clock, feeds coverage, closes weekly rows, and builds the timeline you'll read before your next
+meeting. An unlogged call may as well not have happened.
 
-Press **Start weekly outreach** in the banner once a week. The app ranks every lender by who's
-slipping furthest, builds a list of ten with ten more on deck, and shows the first five.
+**Record promises.** Two directions, kept apart: **I promised** and **they promised**. Added from the
+profile, surfaced in Today's attention when overdue, and all open ones live on **Follow-ups** to
+complete, reschedule, or dismiss. The sidebar badge counts open promises and tasks together.
 
-Each row gives you their name, bank, territory, how long it's been, **why now**, and **a suggested
-action** matched to how that person prefers to be contacted.
+**Note the person.** Golf, kids' soccer, BYU tickets, the fact they only answer texts — categorized
+on the profile and never expiring, because a coverage clock resets constantly but their daughter
+plays club soccer for years. Also set their preferred contact method; the weekly list's suggested
+action follows it. This is the material AI drafting draws on once it's switched on.
 
-You don't tick anything off — **logging a touch closes the row automatically**, and the progress
-bar fills as you go. **View all** reveals the rest.
+**Handle bank changes.** Profile → *Changed banks?* The lender keeps their entire history —
+conversations, promises, personal notes — and only the current institution changes. The old bank
+stays in their history, and the app flags it, since that branch may now need a replacement contact.
 
-Ten is the plan; five is what fits in a sitting. Getting through five a week is a working system.
+## Finding people
 
-### The four row buttons
-
-**Draft email** — opens a new message in Outlook addressed to that lender. You send it as yourself
-from your own mailbox, so replies land in your normal thread history. When you come back, the app
-asks whether it went out and logs the touch. The app deliberately does not send lender email on
-your behalf; mail from a system address reads as bulk and damages deliverability.
-
-**Text** — opens Messages with their number, then offers to log it. Same pattern: the app can't see
-whether you hit send, so it asks.
-
-**Schedule** — places a **tentative hold**: type, time, optional location. It stays tentative
-because nothing is agreed until they reply, and it appears under *Waiting on replies* until it
-firms up. Durations default sensibly — lunch and breakfast 60 minutes, golf 150, office visits and
-pop-ins 15.
-
-**Replace** — takes that lender off this week's list and promotes the next one on deck into the
-slot. Nothing is deleted; you're saying "not now."
-
----
-
-## As it happens
-
-### Logging what you did
-
-Lender profile → **Log activity**. Pick what happened, when, and a one-line summary. Tick *they
-reached out to me* if they started it — inbound contact is a real signal about relationship health.
-
-Logging resets the clock, feeds the coverage percentage, closes weekly list rows, and builds the
-timeline you'll read before your next meeting. An unlogged call may as well not have happened.
-
-### Promises
-
-Tracked separately from ordinary tasks and shown more aggressively, because breaking one costs more
-than forgetting a task. Two directions: **I promised** and **they promised**. Both go stale, both
-are worth chasing.
-
-Add from the lender's Actions panel. Overdue ones surface in Today's attention; everything open
-lives on **Follow-ups**, where you can complete, reschedule, or dismiss. The sidebar badge counts
-open promises and tasks together.
-
-### Remembering the person
-
-Each profile holds **personal notes and interests** — golf, kids' soccer, BYU tickets, the lunch
-spot they like, the fact they only answer texts. Categorized, and they never expire on their own. A
-coverage clock resets constantly; the fact that their daughter plays club soccer stays true for
-years. When AI drafting is on, this is the material it draws on.
-
-You can also set each lender's preferred contact method, which changes the weekly list's suggested
-action.
-
-### When someone changes banks
-
-Profile → **Changed banks?** The lender keeps their entire history — conversations, promises,
-personal notes all follow them — and only the current institution changes. The old bank is
-preserved in their institution history. The app also flags the bank they left, since that branch may
-now need a replacement contact.
-
----
-
-## Reference
-
-### Finding people
-
-**Lenders** — full list with typo-tolerant search across names, banks, and emails
-(*Whitfeild* finds Whitfield). Built-in views:
+**Lenders** has typo-tolerant search across names, banks, and emails (*Whitfeild* finds Whitfield)
+plus one-click views:
 
 | View | Who's in it |
 |---|---|
@@ -183,61 +109,49 @@ now need a replacement contact.
 | Campaign-only | Reached by mass email, never personally |
 | Recently contacted | Spoken to in the last week |
 | Upcoming meetings | Has a confirmed meeting booked |
-| St. George candidates | Southern Utah, for trip planning |
-| Salt Lake candidates | Wasatch Front |
+| St. George / Salt Lake | Southern Utah and Wasatch Front, for trips |
 | Active-loan contacts | Referred a loan currently in process |
 | Overdue promises | Something outstanding between you |
 
-**Needs Attention** — the full queue of everyone not personally on track, worst first. Filter by
-state (grace, overdue, seriously overdue, campaign-only, no personal touch, active loan, open
-promise) and narrow by territory when planning a trip.
+**Needs Attention** is the full queue of everyone not personally on track, worst first — filter by
+grace, overdue, seriously overdue, campaign-only, no personal touch, active loan, or open promise,
+and narrow by territory when planning a trip. **Institutions** shows every contact you have at a
+bank plus their combined activity — useful for spotting a bank where you know one person and should
+know three.
 
-**Institutions** — the bank view. Every contact you have there plus recent activity across all of
-them. Useful for spotting a bank where you know one person and should know three.
+## Settings & import
 
-### Settings worth setting
+- **Contact goal and grace** — the 30 and 10. If a month is too aggressive across 120 people, raise
+  the goal rather than living with a permanently red dashboard.
+- **Weekly list sizes** — Top and On Deck counts, ten and ten by default.
+- **Your name and home base**, and **daily digest** on/off plus time.
+- Settings also holds **Import**, **CSV export**, and on/off status for Microsoft 365, AI drafting,
+  and digest email.
 
-- **Your name and home base** — greetings and travel distance
-- **Contact goal and grace period** — the 30 and 10. If a month is too aggressive across 120
-  people, raise the goal rather than living with a permanently red dashboard.
-- **Weekly list sizes** — Top and On Deck counts, ten and ten by default
-- **Daily digest** — whether you get a morning summary, and when
+**Importing your real list** runs in four steps and saves nothing until the last: upload the file →
+correct the column matching it guessed → review the count, likely duplicates, and suggested tags
+pulled from your notes column (mention golf or BYU and it offers to file those as personal details;
+your original note text is always kept) → import and get a report. If sample data is still present it
+offers to clear it first, so demo and real lenders never mix.
 
-Settings also holds **Import**, **CSV export**, and the connection status for Microsoft 365, AI
-drafting, and digest email.
+## Safety net
 
-### Getting your real list in
+- **Nothing deletes immediately.** Deleting moves a record to **Trash**, restorable for 90 days.
+  Delete the wrong lender and their whole history returns.
+- **Your data is exportable** — one-click CSV for lenders, institutions, activities, tasks, promises,
+  referrals, and active loans.
+- **Private by default.** The database enforces per-person access at its own level, not just in the
+  app. An audit log records what changed and whether it was you, the assistant, or automation.
+- **On your phone:** open the site and use *Add to Home Screen*. It installs like an app, which makes
+  the "log that call from the car" habit realistic.
 
-1. **Upload** your Excel file or CSV.
-2. **Match your columns** — the app guesses; you correct. Nothing imports on a guess.
-3. **Review** — how many lenders will be created, likely duplicates, and suggested tags pulled from
-   your notes column (mention golf or BYU or kids and it offers to file those as personal details).
-   Approve or reject each. Your original note text is always kept as written.
-4. **Import** — you get a report. If sample data is still present, the app offers to clear it first
-   so demo and real lenders never mix.
-
-### The safety net
-
-**Nothing deletes immediately.** Deleting moves a record to **Trash**, restorable for 90 days
-before permanent cleanup. Delete the wrong lender and their whole history comes back.
-
-**Your data is exportable.** One-click CSV for lenders, institutions, activities, tasks, promises,
-referrals, and active loans.
-
-**Private by default.** The database enforces per-person access at its own level, not just in the
-app. There's also an audit log recording what changed and whether it was you, the assistant, or an
-automated process.
-
-**On your phone:** open the site and use *Add to Home Screen*. It installs like an app, which makes
-the thirty-second "log that call from the car" habit realistic.
-
-### How do I…
+## How do I…
 
 | Task | Where |
 |---|---|
-| Log a call I just had | Lender profile → Log activity → Call |
+| Log a call I just had | Profile → Log activity → Call |
 | Add a lender | Add, or Lenders → New. Checks duplicates as you type. |
-| Record something I owe someone | Profile → Add promise → I promised → due date |
+| Record something I owe | Profile → Add promise → I promised → due date |
 | See who's slipping | Needs Attention, or the Overdue band on the status bar |
 | Plan a St. George trip | Needs Attention → territory Southern Utah |
 | Book a tentative lunch | Schedule on their weekly-list row |
@@ -246,55 +160,45 @@ the thirty-second "log that call from the car" habit realistic.
 | Rebuild this week's list | Start weekly outreach in the banner |
 | Undo a deletion | Trash → Restore (90 days) |
 | Get my data out | Settings → Export your data |
-| Change the 30-day goal | Settings → Contact goal and grace period |
+| Change the 30-day goal | Settings → Contact goal and grace |
 
----
+## What's live
 
-## Live now vs. coming
+So you don't hunt for a screen that isn't built.
 
-### Working today
+| Area | State | Notes |
+|---|---|---|
+| Dashboard, coverage, weekly list | Working | Everything above |
+| Lenders, institutions, profiles | Working | Search, timelines, bank changes |
+| Promises, tasks, Needs Attention | Working | Both directions, filters |
+| Meetings | Working | Tentative holds, notes, brief status |
+| Loan update tracking | Working | Weekly touch, logging |
+| Import, export, trash, audit | Working | Full wizard, 90-day restore |
+| AI drafting in your voice | Needs key | Anthropic, a few dollars a month. Today it powers *Ask assistant* and nothing else. |
+| Daily digest by email | Needs key | Resend. The summary shows in the app either way. |
+| Real Outlook drafts & calendar | Needs IT | Microsoft 365 registration and admin consent at IMBL |
+| Your writing voice | Not built | Storage ready; needs the screen to paste samples |
+| Annual goal | Not built | Read on the dashboard; no screen to set it |
+| Referral & deal tracking | Not built | Follow-up logic written and tested; no screen |
+| Active-loan management | Not built | Visible on the dashboard; can't add or edit loans |
+| Campaigns | Not built | Storage ready; no screen, no sending |
+| Trip planning | Not built | Shows in the rail if a trip exists; can't create one |
+| Meeting briefs | Not built | Status shown; nothing generates them |
+| Expenses, reports, drop-offs | Not built | Storage ready; no screens |
 
-Dashboard as described · both coverage clocks and all states · eight-week history · weekly list
-(generate, work, replace, auto-complete) · lenders and institutions with search, profiles,
-timelines, bank changes · promises and tasks in both directions · Needs Attention queue with
-filters · tentative meeting holds, notes capture, brief status · weekly loan-update tracking ·
-import wizard and CSV export · 90-day trash and audit log.
+None of the "not built" items are hard — mostly screens over tables that already exist. The two worth
+doing first are the voice screen and the annual goal, since both improve something you already look
+at daily.
 
-### Needs a key or an approval
-
-| Feature | What it needs |
-|---|---|
-| AI drafting in your voice | An Anthropic key, a few dollars a month. Today it powers *Ask assistant* and nothing else. |
-| Daily digest by email | A Resend key. The morning summary shows in the app either way. |
-| Real Outlook drafts and calendar | Microsoft 365 app registration and admin consent at IMBL. |
-
-### Designed, not built yet
-
-| Feature | Where it stands |
-|---|---|
-| Your writing voice | Storage ready. Needs the screen where you paste samples. |
-| Referral and deal tracking | Follow-up logic written and unit-tested. No screen. |
-| Active-loan management | Visible on the dashboard; no screen to add or edit loans. |
-| Campaigns | Storage ready. No screen, no sending. |
-| Trip planning | Shows in the rail if a trip exists; no screen to create one. |
-| Meeting briefs | Status shown; nothing generates them yet. |
-| Annual goal | Read on the dashboard; no screen to set it. |
-| Expenses, reports, drop-offs | Storage ready. No screens. |
-
-None of that last list is hard — mostly screens over tables that already exist. The first two worth
-doing are probably the voice screen and the annual goal, since both improve something you already
-look at daily.
-
-## Finish setting up
+## Loose ends
 
 1. **Add the redirect addresses in Supabase** (Authentication → URL Configuration), with the
-   `https://` prefix. Until then *Forgot password* fails. Signing in normally already works.
+   `https://` prefix. Until then *Forgot password* fails; signing in normally already works.
 2. **Turn off the Vercel login wall** so the site opens on your phone. Your own login is the real
    front door.
 3. **Set your annual approval goal** once that screen exists.
 
 ---
 
-One habit carries the whole system: log the touch while you still remember it. Everything the
-dashboard tells you is downstream of that. If a week goes by where you only do one thing, make it
-pressing **Start weekly outreach** and working the five names.
+One habit carries the system: log the touch while you still remember it. If a week goes by where you
+only do one thing, make it pressing **Start weekly outreach** and working the five names.
