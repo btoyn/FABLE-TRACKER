@@ -9,7 +9,7 @@ const buttonVariants = cva(
         primary:
           "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover hover:shadow active:bg-primary-hover active:shadow-none",
         secondary:
-          "bg-surface text-foreground border border-border hover:bg-primary-soft hover:border-primary/30 active:bg-primary-soft/80",
+          "bg-surface text-foreground border border-border hover:border-primary/35 hover:bg-primary-soft hover:shadow-[0_1px_3px_rgba(24,35,56,0.07)] active:bg-primary-soft/80 active:shadow-none",
         ghost: "text-foreground hover:bg-black/5 active:bg-black/10",
         danger: "bg-danger text-white shadow-sm hover:bg-danger/90 active:bg-danger",
         link: "text-primary underline-offset-4 hover:underline active:translate-y-0",

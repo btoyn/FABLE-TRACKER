@@ -21,6 +21,8 @@ export interface CoverageHistory {
   changeFromStart: number | null;
   /** Percentage-point change week over week. */
   changeFromPrevious: number | null;
+  /** Percentage-point change against four weeks ago. */
+  changeFrom30Days: number | null;
   /** True when there isn't enough history to draw an honest line. */
   insufficientData: boolean;
 }
@@ -135,12 +137,15 @@ export async function getCoverageHistory(): Promise<CoverageHistory> {
   const withData = series.filter((p) => p.total > 0);
   const last = series[series.length - 1];
   const prev = series[series.length - 2];
+  const fourWeeksAgo = series[series.length - 5];
   const first = withData[0];
 
   return {
     points: series,
     changeFromStart: first && last && withData.length > 1 ? last.pct - first.pct : null,
     changeFromPrevious: prev && prev.total > 0 && last ? last.pct - prev.pct : null,
+    changeFrom30Days:
+      fourWeeksAgo && fourWeeksAgo.total > 0 && last ? last.pct - fourWeeksAgo.pct : null,
     insufficientData: withData.length < 2,
   };
 }
@@ -190,7 +195,7 @@ export function buildStatusSegments(lenders: LenderWithCoverage[]): StatusSegmen
       label: "On track",
       count: onTrack,
       href: "/lenders?view=on_track",
-      color: "#2b4fc2",
+      color: "#3157d5",
       hint: "Personal contact inside the goal window",
     },
     {
@@ -198,7 +203,7 @@ export function buildStatusSegments(lenders: LenderWithCoverage[]): StatusSegmen
       label: "Meeting scheduled",
       count: meeting,
       href: "/lenders?view=upcoming_meetings",
-      color: "#6b8ce0",
+      color: "#8ba4ea",
       hint: "Confirmed meeting on the calendar",
     },
     {
@@ -206,7 +211,7 @@ export function buildStatusSegments(lenders: LenderWithCoverage[]): StatusSegmen
       label: "Grace period",
       count: grace,
       href: "/needs-attention?f=grace",
-      color: "#c99a2e",
+      color: "#d8a84e",
       hint: "Just past the goal — still recoverable",
     },
     {
@@ -214,7 +219,7 @@ export function buildStatusSegments(lenders: LenderWithCoverage[]): StatusSegmen
       label: "Campaign only",
       count: campaignOnly,
       href: "/needs-attention?f=campaign_only",
-      color: "#8a94a6",
+      color: "#8b96ac",
       hint: "Reached by campaign email, but no personal touch",
     },
     {

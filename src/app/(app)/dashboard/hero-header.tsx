@@ -1,0 +1,286 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, CalendarClock, HandCoins, Send, Sparkles, Users, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { askAssistant, startWeeklyOutreach } from "./actions";
+
+export interface HeroChip {
+  icon: "promise" | "loan" | "list";
+  label: string;
+}
+
+const CHIP_ICONS = {
+  promise: HandCoins,
+  loan: CalendarClock,
+  list: Users,
+} as const;
+
+/**
+ * Hero header. The mountain photograph lives at
+ * /public/images/mountain-sunrise-header.png and is cover-cropped so the peak
+ * and sun sit on the right; the navy → royal-blue → transparent wash keeps the
+ * left side readable. The gradient is a complete look on its own, so the hero
+ * still reads correctly before the photo is added.
+ */
+export function HeroHeader({
+  greeting,
+  firstName,
+  summary,
+  chips,
+  coveragePct,
+  coveredCount,
+  activeCount,
+  hasPlan,
+  aiEnabled,
+}: {
+  greeting: string;
+  firstName: string | null;
+  summary: string;
+  chips: HeroChip[];
+  coveragePct: number;
+  coveredCount: number;
+  activeCount: number;
+  hasPlan: boolean;
+  aiEnabled: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
+
+  function handleStart() {
+    setError(null);
+    startTransition(async () => {
+      const result = await startWeeklyOutreach();
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+      document.getElementById("this-week")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function handleAsk(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const question = String(new FormData(e.currentTarget).get("question") ?? "");
+    setAnswer(null);
+    setAssistantError(null);
+    startTransition(async () => {
+      const result = await askAssistant(question);
+      if (result.error) setAssistantError(result.error);
+      if (result.answer) setAnswer(result.answer);
+    });
+  }
+
+  return (
+    <section className="mb-5">
+      <div
+        className="relative overflow-hidden rounded-[22px] bg-navy shadow-[var(--shadow-hero)]"
+        style={{
+          backgroundImage: "url('/images/mountain-sunrise-header.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "right 28%",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Overlay: dense navy on the left for text, royal blue through the middle,
+            thinning to the right so the peak and sunlight stay visible. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(100deg, rgba(20,35,74,0.96) 0%, rgba(23,42,96,0.93) 28%, rgba(49,87,213,0.72) 55%, rgba(49,87,213,0.34) 76%, rgba(49,87,213,0.12) 100%)",
+          }}
+        />
+        {/* A touch of warmth pulled from the sunrise, kept very low */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 82% 30%, rgba(216,168,78,0.20) 0%, rgba(216,168,78,0) 46%)",
+          }}
+        />
+
+        <div className="relative flex min-h-[230px] flex-col gap-6 p-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+          {/* Zone 1 + 2 — greeting, summary, actions, status chips */}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[27px] font-bold leading-tight text-white sm:text-[32px]">
+              {greeting}
+              {firstName ? `, ${firstName}` : ""}
+            </h1>
+            <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-white/85">{summary}</p>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <Button
+                size="md"
+                disabled={pending}
+                onClick={handleStart}
+                className="border border-white/10 bg-white text-primary shadow-[0_2px_10px_rgba(10,20,45,0.22)] hover:bg-white hover:text-primary-hover hover:shadow-[0_4px_14px_rgba(10,20,45,0.28)] active:bg-white/90"
+              >
+                {pending ? "Working…" : hasPlan ? "Continue weekly outreach" : "Start weekly outreach"}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                size="md"
+                variant="ghost"
+                onClick={() => setShowAssistant((v) => !v)}
+                className="border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 active:bg-white/25"
+              >
+                <Sparkles className="h-4 w-4" />
+                Ask assistant
+              </Button>
+            </div>
+
+            {chips.length > 0 && (
+              <ul className="mt-5 flex flex-wrap gap-2">
+                {chips.map((chip) => {
+                  const Icon = CHIP_ICONS[chip.icon];
+                  return (
+                    <li
+                      key={chip.label}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-3 py-1.5 text-[12.5px] font-medium text-white backdrop-blur-sm"
+                    >
+                      <Icon className="h-3.5 w-3.5 opacity-90" />
+                      {chip.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {error && (
+              <p className="mt-3 max-w-md rounded-lg bg-white/15 px-3 py-2 text-sm text-white backdrop-blur-sm">
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* Zone 3 — frosted coverage panel */}
+          <div className="shrink-0 self-start lg:self-center">
+            <div className="flex items-center gap-4 rounded-2xl border border-white/25 bg-white/[0.13] p-4 backdrop-blur-md sm:gap-5 sm:p-5">
+              <CoverageRing value={coveragePct} />
+              <div className="text-white">
+                <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white/75">
+                  Personal coverage
+                </p>
+                <p className="mt-1 text-[15px] font-medium">
+                  {coveredCount} of {activeCount} lenders
+                </p>
+                <p className="mt-0.5 text-[12.5px] text-white/70">
+                  {activeCount - coveredCount} still to reach
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showAssistant && (
+          <div className="relative border-t border-white/20 bg-[rgba(12,22,48,0.55)] px-6 py-4 backdrop-blur-md sm:px-7">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium text-white">
+                Ask about your relationships — who to call, what&apos;s slipping, what to say.
+              </p>
+              <button
+                onClick={() => setShowAssistant(false)}
+                className="rounded-md p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+                aria-label="Close assistant"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {aiEnabled ? (
+              <form onSubmit={handleAsk} className="mt-3 flex flex-wrap gap-2">
+                <input
+                  name="question"
+                  required
+                  placeholder="e.g. Who should I prioritize in Southern Utah this week?"
+                  className="min-w-0 flex-1 rounded-xl border border-white/25 bg-white/95 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-2 focus:outline-offset-2 focus:outline-white"
+                />
+                <Button
+                  type="submit"
+                  size="md"
+                  disabled={pending}
+                  className="bg-white text-primary hover:bg-white hover:text-primary-hover"
+                >
+                  <Send className="h-4 w-4" />
+                  {pending ? "Thinking…" : "Ask"}
+                </Button>
+              </form>
+            ) : (
+              <p className="mt-2 max-w-2xl text-sm text-white/85">
+                Assistant drafting is off. Add an Anthropic API key in{" "}
+                <Link href="/settings" className="font-medium text-white underline">
+                  Settings
+                </Link>{" "}
+                to switch it on — everything else here works without it.
+              </p>
+            )}
+
+            {assistantError && (
+              <p className="mt-3 rounded-lg bg-white/15 px-3 py-2 text-sm text-white">
+                {assistantError}
+              </p>
+            )}
+            {answer && (
+              <div className="mt-3 whitespace-pre-wrap rounded-xl bg-white px-4 py-3 text-sm leading-relaxed text-foreground shadow-sm">
+                {answer}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Ring sized for the frosted panel; white on the photograph. */
+function CoverageRing({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const size = 96;
+  const stroke = 9;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (pct / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex shrink-0 items-center justify-center">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+        role="img"
+        aria-label={`Personal coverage: ${pct}%`}
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          strokeWidth={stroke}
+          className="stroke-white/25"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference - dash}`}
+          className="stroke-white"
+        />
+      </svg>
+      <span className="absolute text-[22px] font-bold text-white tabular-nums">{pct}%</span>
+    </div>
+  );
+}

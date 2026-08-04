@@ -10,73 +10,63 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProgressBar, type ProgressTone } from "@/components/ui/progress";
+import { Sparkline } from "@/components/charts/sparkline";
 import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-function Trend({ change, unit = "pts" }: { change: number | null; unit?: string }) {
-  if (change === null) return null;
+function Delta({ change, suffix }: { change: number; suffix: string }) {
   const flat = change === 0;
   const up = change > 0;
   const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
-  const tone = flat ? "text-muted" : up ? "text-success" : "text-danger";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${tone}`}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-xs font-semibold",
+        flat ? "text-muted" : up ? "text-success" : "text-danger",
+      )}
+    >
       <Icon className="h-3.5 w-3.5" />
-      {flat ? "no change" : `${Math.abs(change)} ${unit}`}
+      {flat ? "No change" : `${up ? "+" : "−"}${Math.abs(change)}%`}
+      <span className="font-normal text-muted">{suffix}</span>
     </span>
   );
 }
 
-function KpiCard({
+function CardShell({
   href,
-  icon: Icon,
-  label,
-  value,
-  valueSuffix,
-  context,
-  progress,
-  tone = "primary",
-  trend,
+  children,
+  className,
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  valueSuffix?: string;
-  context: React.ReactNode;
-  progress?: number;
-  tone?: ProgressTone;
-  trend?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Link href={href} className="group block">
-      <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/25 group-hover:shadow-[0_4px_14px_rgba(16,24,40,0.08)] group-active:translate-y-0">
-        <CardContent className="flex h-full flex-col p-5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-[13px] font-medium text-muted">
-              <Icon className="h-4 w-4 text-primary/70" />
-              {label}
-            </span>
-            {trend}
-          </div>
-
-          <p className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-[28px] font-semibold leading-none tracking-tight tabular-nums">
-              {value}
-            </span>
-            {valueSuffix && (
-              <span className="text-sm font-medium text-muted">{valueSuffix}</span>
-            )}
-          </p>
-
-          <div className="mt-auto pt-3">
-            {progress !== undefined && (
-              <ProgressBar value={progress} tone={tone} className="mb-2" label={label} />
-            )}
-            <p className="text-xs leading-relaxed text-muted">{context}</p>
-          </div>
-        </CardContent>
+    <Link href={href} className={cn("group block", className)}>
+      <Card className="h-full transition-all duration-200 group-hover:-translate-y-[2px] group-hover:border-primary/25 group-hover:shadow-[var(--shadow-lift)] group-active:translate-y-0 group-active:shadow-[var(--shadow-card)]">
+        {children}
       </Card>
     </Link>
+  );
+}
+
+function Eyebrow({
+  icon: Icon,
+  label,
+  right,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-flex items-center gap-2 text-[13px] font-medium text-muted">
+        <Icon className="h-4 w-4 text-primary/65" />
+        {label}
+      </span>
+      {right}
+    </div>
   );
 }
 
@@ -86,94 +76,176 @@ export function KpiCards({
   loans,
   approvals,
 }: {
-  coverage: { pct: number; covered: number; active: number; changeFromPrevious: number | null };
+  coverage: {
+    pct: number;
+    covered: number;
+    active: number;
+    change30: number | null;
+    trend: number[];
+  };
   meetings: { upcoming: number; nextLabel: string | null; awaitingNotes: number };
   loans: { activeLoans: number; updatedThisWeek: number; dueNow: number };
   approvals: { ytd: number; goal: number | null; amount: number };
 }) {
-  const loanPct =
-    loans.activeLoans === 0 ? 100 : (loans.updatedThisWeek / loans.activeLoans) * 100;
+  const loanPct = loans.activeLoans === 0 ? 100 : (loans.updatedThisWeek / loans.activeLoans) * 100;
   const approvalPct =
-    approvals.goal && approvals.goal > 0 ? (approvals.ytd / approvals.goal) * 100 : 0;
+    approvals.goal && approvals.goal > 0
+      ? Math.min(100, (approvals.ytd / approvals.goal) * 100)
+      : 0;
+  const coverageTone: ProgressTone =
+    coverage.pct >= 75 ? "success" : coverage.pct >= 45 ? "primary" : "warning";
 
   return (
-    <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <KpiCard
-        href="/lenders?view=needs_contact"
-        icon={HeartHandshake}
-        label="Personal coverage"
-        value={`${coverage.pct}%`}
-        context={
-          <>
-            {coverage.covered} of {coverage.active} active lenders have a one-to-one touch inside the
-            goal window.
-          </>
-        }
-        progress={coverage.pct}
-        tone={coverage.pct >= 75 ? "success" : coverage.pct >= 50 ? "primary" : "warning"}
-        trend={<Trend change={coverage.changeFromPrevious} />}
-      />
+    <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
+      {/* ---- Large: personal coverage ---- */}
+      <CardShell href="/lenders?view=needs_contact">
+        <CardContent className="flex h-full flex-col p-5">
+          <Eyebrow
+            icon={HeartHandshake}
+            label="Personal coverage"
+            right={
+              coverage.change30 !== null ? (
+                <Delta change={coverage.change30} suffix="vs 30 days ago" />
+              ) : undefined
+            }
+          />
 
-      <KpiCard
-        href="/lenders?view=upcoming_meetings"
-        icon={CalendarDays}
-        label="Meetings"
-        value={String(meetings.upcoming)}
-        valueSuffix="confirmed"
-        context={
-          meetings.upcoming === 0 ? (
-            <>Nothing on the calendar yet — scheduling one counts as coverage right away.</>
+          <p className="mt-3 text-[34px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+            {coverage.pct}%
+          </p>
+
+          {coverage.trend.length >= 2 ? (
+            <div className="mt-3.5">
+              <Sparkline
+                values={coverage.trend}
+                className="h-11 w-full"
+                label="Personal coverage over the last eight weeks"
+              />
+              <p className="mt-1 text-[11.5px] font-medium uppercase tracking-[0.07em] text-muted/80">
+                Last 8 weeks
+              </p>
+            </div>
           ) : (
-            <>
-              Next up {meetings.nextLabel}.
-              {meetings.awaitingNotes > 0 && ` ${meetings.awaitingNotes} awaiting notes.`}
-            </>
-          )
-        }
-      />
+            <p className="mt-3 text-[12.5px] leading-relaxed text-muted">
+              The 8-week trend appears once you have a couple of weeks of activity logged.
+            </p>
+          )}
 
-      <KpiCard
-        href="/follow-ups"
-        icon={MessageSquareDot}
-        label="Weekly loan communication"
-        value={
-          loans.activeLoans === 0 ? "—" : `${loans.updatedThisWeek}/${loans.activeLoans}`
-        }
-        context={
-          loans.activeLoans === 0 ? (
-            <>No active loans being tracked right now.</>
-          ) : loans.dueNow > 0 ? (
-            <>
-              {loans.dueNow} update{loans.dueNow === 1 ? "" : "s"} due now — every active loan gets a
-              weekly touch, even when nothing changed.
-            </>
-          ) : (
-            <>Every active loan has had its weekly touch. Nothing due.</>
-          )
-        }
-        progress={loans.activeLoans === 0 ? undefined : loanPct}
-        tone={loans.dueNow > 0 ? "warning" : "success"}
-      />
+          <div className="mt-auto pt-4">
+            <ProgressBar
+              value={coverage.pct}
+              tone={coverageTone}
+              className="mb-2.5"
+              label="Personal coverage"
+            />
+            <p className="text-[13px] text-muted">
+              <span className="font-semibold text-foreground">
+                {coverage.covered} of {coverage.active}
+              </span>{" "}
+              lenders have a personal touch
+            </p>
+          </div>
+        </CardContent>
+      </CardShell>
 
-      <KpiCard
-        href="/lenders?view=active_loans"
-        icon={BadgeCheck}
-        label="Annual SBA approvals"
-        value={String(approvals.ytd)}
-        valueSuffix={approvals.goal ? `of ${approvals.goal}` : "this year"}
-        context={
-          <>
-            {approvals.amount > 0
-              ? `${formatCurrency(approvals.amount)} approved year to date.`
-              : "No approvals recorded yet this year."}
-            {approvals.goal
-              ? ` ${Math.max(0, approvals.goal - approvals.ytd)} to go.`
-              : " Set an annual goal to track pace."}
-          </>
-        }
-        progress={approvals.goal ? approvalPct : undefined}
-        tone={approvalPct >= 75 ? "success" : "primary"}
-      />
+      {/* ---- Large: weekly loan communication ---- */}
+      <CardShell href="/follow-ups">
+        <CardContent className="flex h-full flex-col p-5">
+          <Eyebrow
+            icon={MessageSquareDot}
+            label="Weekly loan communication"
+            right={
+              loans.dueNow > 0 ? (
+                <span className="rounded-full bg-warning-soft px-2.5 py-[3px] text-xs font-semibold text-warning">
+                  {loans.dueNow} due now
+                </span>
+              ) : loans.activeLoans > 0 ? (
+                <span className="rounded-full bg-success-soft px-2.5 py-[3px] text-xs font-semibold text-success">
+                  All current
+                </span>
+              ) : undefined
+            }
+          />
+
+          <p className="mt-3.5 text-[34px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+            {loans.activeLoans === 0 ? "—" : `${loans.updatedThisWeek}/${loans.activeLoans}`}
+          </p>
+          <p className="mt-1.5 text-[13px] text-muted">active loans updated this week</p>
+
+          <div className="mt-auto pt-4">
+            {loans.activeLoans > 0 && (
+              <ProgressBar
+                value={loanPct}
+                tone={loans.dueNow > 0 ? "primary" : "success"}
+                className="mb-2.5"
+                label="Loans updated this week"
+              />
+            )}
+            <p className="text-[13px] leading-relaxed text-muted">
+              {loans.activeLoans === 0
+                ? "No active loans tracked right now."
+                : loans.dueNow > 0
+                  ? `${loans.dueNow} update${loans.dueNow === 1 ? "" : "s"} due now — every loan gets a weekly touch, even when nothing changed.`
+                  : "Every active loan has had its weekly touch."}
+            </p>
+          </div>
+        </CardContent>
+      </CardShell>
+
+      {/* ---- Small pair, stacked on wide screens ---- */}
+      <div className="grid gap-4 sm:grid-cols-2 md:col-span-2 xl:col-span-1 xl:grid-cols-1">
+        <CardShell href="/lenders?view=upcoming_meetings">
+          <CardContent className="flex h-full flex-col p-[18px]">
+            <Eyebrow icon={CalendarDays} label="Meetings" />
+            <p className="mt-2.5 flex items-baseline gap-1.5">
+              <span className="text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+                {meetings.upcoming}
+              </span>
+              <span className="text-[13px] font-medium text-muted">confirmed</span>
+            </p>
+            <p className="mt-auto pt-2.5 text-[12.5px] leading-relaxed text-muted">
+              {meetings.upcoming === 0 ? (
+                "Nothing booked — scheduling one covers that lender right away."
+              ) : (
+                <>
+                  Next {meetings.nextLabel}
+                  {meetings.awaitingNotes > 0 && ` · ${meetings.awaitingNotes} awaiting notes`}
+                </>
+              )}
+            </p>
+          </CardContent>
+        </CardShell>
+
+        <CardShell href="/lenders?view=active_loans">
+          <CardContent className="flex h-full flex-col p-[18px]">
+            <Eyebrow icon={BadgeCheck} label="Annual SBA approvals" />
+            <p className="mt-2.5 flex items-baseline gap-1.5">
+              <span className="text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+                {approvals.ytd}
+              </span>
+              <span className="text-[13px] font-medium text-muted">
+                {approvals.goal ? `of ${approvals.goal}` : "this year"}
+              </span>
+            </p>
+            <div className="mt-auto pt-2.5">
+              {approvals.goal ? (
+                <ProgressBar
+                  value={approvalPct}
+                  tone={approvalPct >= 75 ? "success" : "primary"}
+                  className="mb-2 h-1"
+                  label="Approvals against goal"
+                />
+              ) : null}
+              <p className="text-[12.5px] leading-relaxed text-muted">
+                {approvals.amount > 0 ? `${formatCurrency(approvals.amount)} approved` : "None yet"}
+                {approvals.goal
+                  ? ` · ${Math.max(0, approvals.goal - approvals.ytd)} to go`
+                  : " · set a goal to track pace"}
+              </p>
+            </div>
+          </CardContent>
+        </CardShell>
+      </div>
     </div>
   );
 }

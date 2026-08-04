@@ -14,6 +14,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -58,20 +59,20 @@ export function RelationshipRows({
 
   return (
     <Card id="this-week">
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <CardHeader className="p-6 pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-[17px]">This week&apos;s relationships</CardTitle>
-            <CardDescription>
-              Chosen by who&apos;s slipping furthest, worst first. Reaching out ticks them off
-              automatically.
+            <CardTitle className="text-[19px]">This week&apos;s relationships</CardTitle>
+            <CardDescription className="mt-1">
+              Worst-slipping first. Reaching out ticks them off automatically.
             </CardDescription>
           </div>
-          <div className="w-full max-w-[190px] shrink-0">
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className="text-xs font-medium text-muted">This week</span>
-              <span className="text-xs font-semibold tabular-nums">
-                {completed}/{total}
+          <div className="w-full max-w-[210px] shrink-0">
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className="text-xs font-medium text-muted">Done this week</span>
+              <span className="text-[13px] font-bold tabular-nums">
+                {completed}
+                <span className="font-medium text-muted">/{total}</span>
               </span>
             </div>
             <ProgressBar
@@ -83,16 +84,16 @@ export function RelationshipRows({
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-6 pt-2">
         {rows.length === 0 ? (
           <EmptyState
             title={hasPlan ? "Everyone on this week's list is done" : "No weekly plan yet"}
             description={
               hasPlan
                 ? "Nice work. The list rebuilds at the start of next week."
-                : "Use “Start weekly outreach” above and the plan builds itself from your coverage."
+                : "Press “Start weekly outreach” above and the plan builds itself from your coverage."
             }
-            className="py-10"
+            className="py-12"
           />
         ) : (
           <>
@@ -103,13 +104,13 @@ export function RelationshipRows({
             </ul>
 
             {rows.length > VISIBLE && (
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-5">
                 <Button variant="secondary" size="sm" onClick={() => setShowAll((v) => !v)}>
                   {showAll ? "Show top 5" : `View all ${rows.length}`}
                 </Button>
                 <Link
                   href="/needs-attention"
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="text-sm font-semibold text-primary hover:underline"
                 >
                   Full needs-attention queue →
                 </Link>
@@ -147,58 +148,55 @@ function Row({ row }: { row: RelationshipRow }) {
   const sms = row.mobile ? `sms:${row.mobile.replace(/[^\d+]/g, "")}` : null;
 
   return (
-    <li className="py-4 first:pt-0 last:pb-0">
-      <div className="flex items-start gap-3">
-        <Avatar name={row.name} size="lg" />
+    <li className="py-5 first:pt-1 last:pb-1">
+      <div className="flex items-start gap-4">
+        <Avatar name={row.name} size="lg" className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <Link
               href={`/lenders/${row.lenderId}`}
-              className="text-[15px] font-semibold leading-tight hover:text-primary"
+              className="text-[15.5px] font-semibold leading-tight transition-colors hover:text-primary"
             >
               {row.name}
             </Link>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                row.urgent ? "bg-danger-soft text-danger" : "bg-black/5 text-muted"
-              }`}
-            >
+            <Badge variant={row.urgent ? "overdue" : "muted"} size="sm">
               <Clock3 className="h-3 w-3" />
               {row.contactPhrase}
-            </span>
+            </Badge>
           </div>
 
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
             {row.institution && (
-              <span className="inline-flex items-center gap-1">
-                <Building2 className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 text-[13px] text-muted">
+                <Building2 className="h-3.5 w-3.5 shrink-0 opacity-70" />
                 {row.institution}
               </span>
             )}
             {row.territory && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" />
+              <Badge variant="territory" size="sm">
+                <MapPin className="h-3 w-3" />
                 {row.territory}
-              </span>
+              </Badge>
             )}
-          </p>
+          </div>
 
-          <p className="mt-2 text-sm leading-snug text-foreground/80">
-            <span className="font-medium text-foreground">Why now:</span> {row.reason}
+          <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
+            <span className="font-semibold text-foreground">Why now </span>
+            {row.reason}
           </p>
-          <p className="mt-1 inline-flex items-start gap-1.5 rounded-lg bg-primary-soft px-2.5 py-1.5 text-sm leading-snug text-primary">
-            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p className="mt-2 inline-flex items-start gap-1.5 rounded-xl bg-primary-soft px-3 py-2 text-[13.5px] font-medium leading-snug text-primary">
+            <Lightbulb className="mt-[2px] h-3.5 w-3.5 shrink-0" />
             {row.suggestedAction}
           </p>
 
           {/* Actions */}
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3.5 flex flex-wrap gap-2">
             {mailto ? (
               <a
                 href={mailto}
                 onClick={() => setPanel("logEmail")}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-colors hover:border-primary/30 hover:bg-primary-soft active:bg-primary-soft/80"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-all duration-150 hover:border-primary/35 hover:bg-primary-soft hover:shadow-[0_1px_3px_rgba(24,35,56,0.07)] active:translate-y-px active:bg-primary-soft/80"
               >
                 <Mail className="h-3.5 w-3.5" /> Draft email
               </a>
@@ -212,7 +210,7 @@ function Row({ row }: { row: RelationshipRow }) {
               <a
                 href={sms}
                 onClick={() => setPanel("logText")}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-colors hover:border-primary/30 hover:bg-primary-soft active:bg-primary-soft/80"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-all duration-150 hover:border-primary/35 hover:bg-primary-soft hover:shadow-[0_1px_3px_rgba(24,35,56,0.07)] active:translate-y-px active:bg-primary-soft/80"
               >
                 <MessageSquare className="h-3.5 w-3.5" /> Text
               </a>

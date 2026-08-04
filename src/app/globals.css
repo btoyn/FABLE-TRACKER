@@ -1,34 +1,37 @@
 @import "tailwindcss";
 
-/* Lender CRM theme (spec §5): light mode only, royal blue accent,
-   white / soft-gray surfaces, charcoal text, restrained status colors. */
+/* Lender CRM theme — light mode only, royal blue accent on a cool-gray ground,
+   deep navy for emphasis, muted gold used sparingly. */
 :root {
-  --background: #f7f8fa;
+  --background: #f6f8fc;
   --surface: #ffffff;
-  --foreground: #26303c;
-  --muted: #64748b;
-  --border: #e4e7ec;
+  --foreground: #182338;
+  --muted: #62708a;
+  --border: #e7ecf5;
 
-  --primary: #2b4fc2;
-  --primary-hover: #2343ab;
-  --primary-soft: #eef2fd;
+  --primary: #3157d5;
+  --primary-hover: #2848b8;
+  --primary-soft: #eef2fe;
   --primary-foreground: #ffffff;
 
-  /* Subtle blue-gray chrome for the sidebar (§8) */
-  --sidebar: #f2f4f9;
-  --sidebar-border: #e2e6f0;
+  --navy: #1a2f63;
+  --navy-soft: #e8ecf6;
 
-  /* Soft royal-blue banner gradient (§1) — deep enough for white text */
-  --banner-from: #2b4fc2;
-  --banner-via: #3760cf;
-  --banner-to: #557fe0;
+  --gold: #d8a84e;
+  --gold-soft: #fbf4e6;
+  --gold-border: #f0e2c4;
 
+  /* Sidebar chrome */
+  --sidebar: #f3f6fb;
+  --sidebar-border: #e4eaf4;
+
+  /* Status colors, kept restrained */
   --success: #157f3d;
-  --success-soft: #e9f6ee;
-  --warning: #a16207;
-  --warning-soft: #fdf5e3;
+  --success-soft: #e8f5ec;
+  --warning: #a3690a;
+  --warning-soft: #fdf3e3;
   --danger: #b3372f;
-  --danger-soft: #fdeeec;
+  --danger-soft: #fceceb;
 }
 
 @theme inline {
@@ -41,11 +44,13 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-navy: var(--navy);
+  --color-navy-soft: var(--navy-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-border: var(--gold-border);
   --color-sidebar: var(--sidebar);
   --color-sidebar-border: var(--sidebar-border);
-  --color-banner-from: var(--banner-from);
-  --color-banner-via: var(--banner-via);
-  --color-banner-to: var(--banner-to);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -54,6 +59,11 @@
   --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Depth: layered rather than a single flat ring, to avoid the "box of boxes" look */
+  --shadow-card: 0 1px 2px rgba(24, 35, 56, 0.04), 0 4px 12px rgba(24, 35, 56, 0.05);
+  --shadow-lift: 0 2px 4px rgba(24, 35, 56, 0.05), 0 10px 24px rgba(24, 35, 56, 0.08);
+  --shadow-hero: 0 4px 16px rgba(26, 47, 99, 0.16), 0 16px 40px rgba(26, 47, 99, 0.14);
 }
 
 body {
@@ -63,7 +73,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Headings carry the hierarchy, so tighten them a touch (§9). */
 h1,
 h2,
 h3 {

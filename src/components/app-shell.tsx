@@ -55,19 +55,19 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
         active
-          ? "bg-primary text-white shadow-sm"
-          : "text-foreground/70 hover:bg-white hover:text-foreground",
+          ? "bg-primary text-white shadow-[0_2px_8px_rgba(49,87,213,0.28)]"
+          : "text-foreground/75 hover:bg-white hover:text-foreground hover:shadow-[0_1px_2px_rgba(24,35,56,0.05)]",
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-[17px] w-[17px] shrink-0" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {count !== undefined && count > 0 && (
         <span
           className={cn(
             "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-            active ? "bg-white/20 text-white" : "bg-primary-soft text-primary",
+            active ? "bg-white/25 text-white" : "bg-primary-soft text-primary",
           )}
         >
           {count > 99 ? "99+" : count}
@@ -92,15 +92,15 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen w-full">
-      {/* Desktop sidebar — compact, subtle blue-gray (§8) */}
-      <aside className="sticky top-0 hidden h-screen w-52 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-2.5 py-4 md:flex">
-        <Link href="/dashboard" className="mb-5 flex items-center gap-2 px-1.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white shadow-sm">
+      {/* Desktop sidebar — 240px, subtle blue-gray, neutral branding */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 md:flex">
+        <Link href="/dashboard" className="mb-6 flex items-center gap-2.5 px-1.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[13px] font-bold text-white shadow-[0_2px_6px_rgba(49,87,213,0.3)]">
             LC
           </span>
-          <span className="text-[15px] font-semibold tracking-tight">Lender CRM</span>
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">Lender CRM</span>
         </Link>
-        <nav className="flex flex-1 flex-col gap-0.5">
+        <nav className="flex flex-1 flex-col gap-1">
           {NAV.map((item) => (
             <NavLink
               key={item.href}
@@ -112,12 +112,12 @@ export function AppShell({
             />
           ))}
         </nav>
-        <div className="flex flex-col gap-0.5 border-t border-sidebar-border pt-3">
+        <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
           {FOOTER_NAV.map((item) => (
             <NavLink key={item.href} {...item} active={isActive(item.href)} />
           ))}
           {userEmail && (
-            <p className="truncate px-2.5 pt-2 text-xs text-muted" title={userEmail}>
+            <p className="truncate px-3 pt-2.5 text-xs text-muted" title={userEmail}>
               {userEmail}
             </p>
           )}

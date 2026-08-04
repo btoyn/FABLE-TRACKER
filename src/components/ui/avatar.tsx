@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
  * long list reads as one system rather than a bag of colors.
  */
 const TINTS = [
-  "bg-[#e5eafc] text-[#2b4fc2]",
-  "bg-[#e3ecf7] text-[#2c5a8a]",
-  "bg-[#e7e9f5] text-[#454b96]",
-  "bg-[#e4eef1] text-[#256b78]",
-  "bg-[#eaeaf4] text-[#4b4f86]",
-  "bg-[#e2edf9] text-[#1f5f9e]",
+  "bg-[#e6ebfd] text-[#3157d5]",
+  "bg-[#e4ecf8] text-[#2c5b8f]",
+  "bg-[#e8e9f7] text-[#454b96]",
+  "bg-[#e6eaf3] text-[#3d4d75]",
+  "bg-[#eceaf6] text-[#4f4d8a]",
+  "bg-[#e2edfa] text-[#1f5f9e]",
 ] as const;
 
 export function initialsOf(name: string): string {

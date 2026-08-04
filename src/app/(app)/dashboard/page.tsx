@@ -1,4 +1,3 @@
-import { CoverageTrend } from "@/components/charts/coverage-trend";
 import { StatusSegments } from "@/components/charts/status-segments";
 import { createClient } from "@/lib/supabase/server";
 import { ensureSampleData, getLendersWithCoverage } from "@/lib/data";
@@ -13,7 +12,7 @@ import {
 import { getFlags } from "@/lib/flags";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
-import { WelcomeBanner } from "./welcome-banner";
+import { HeroHeader, type HeroChip } from "./hero-header";
 import { KpiCards } from "./kpi-cards";
 import { AttentionCard, type AttentionRow } from "./attention-card";
 import { RelationshipRows, type RelationshipRow } from "./relationship-rows";
@@ -33,6 +32,8 @@ function greeting(): string {
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 type LenderRef = { id: string; full_name: string } | null;
 
@@ -205,20 +206,34 @@ export default async function DashboardPage() {
     }),
   ].sort((a, b) => (a.urgency === b.urgency ? 0 : a.urgency === "high" ? -1 : 1));
 
-  // ---- Banner summary -----------------------------------------------------
-  const parts = [
-    (overduePromises ?? []).length > 0 &&
-      `${(overduePromises ?? []).length} overdue promise${(overduePromises ?? []).length === 1 ? "" : "s"}`,
-    loanComms.dueNow > 0 && `${loanComms.dueNow} loan update${loanComms.dueNow === 1 ? "" : "s"} due`,
-    (missingNotes ?? []).length > 0 &&
-      `${(missingNotes ?? []).length} meeting note${(missingNotes ?? []).length === 1 ? "" : "s"} to capture`,
-    relationshipRows.length > 0 && `${relationshipRows.length} relationships on this week's list`,
-  ].filter(Boolean) as string[];
+  // ---- Hero copy ----------------------------------------------------------
+  const promiseCount = (overduePromises ?? []).length;
+  const noteCount = (missingNotes ?? []).length;
 
+  const chips: HeroChip[] = [
+    promiseCount > 0 && {
+      icon: "promise" as const,
+      label: `${plural(promiseCount, "overdue promise")}`,
+    },
+    loanComms.dueNow > 0 && {
+      icon: "loan" as const,
+      label: `${plural(loanComms.dueNow, "loan update")} due`,
+    },
+    relationshipRows.length > 0 && {
+      icon: "list" as const,
+      label: `${relationshipRows.length} on this week's list`,
+    },
+  ].filter(Boolean) as HeroChip[];
+
+  const openItems = promiseCount + loanComms.dueNow + noteCount;
   const summary =
-    parts.length === 0
-      ? "You're all caught up — nothing overdue and nobody slipping."
-      : `${parts.slice(0, -1).join(", ")}${parts.length > 1 ? " and " : ""}${parts[parts.length - 1]}.`;
+    openItems === 0
+      ? relationshipRows.length > 0
+        ? `Nothing overdue. ${relationshipRows.length} relationships are waiting on a first move.`
+        : "Nothing overdue and nobody slipping. You're clear."
+      : `${plural(openItems, "item")} need${openItems === 1 ? "s" : ""} you today${
+          noteCount > 0 ? `, including ${plural(noteCount, "meeting note")} to capture` : ""
+        }.`;
 
   const approvalsYtd = (approvals ?? []).length;
   const approvedAmount = (approvals ?? []).reduce(
@@ -229,10 +244,11 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <WelcomeBanner
+      <HeroHeader
         greeting={greeting()}
         firstName={profile?.display_name?.split(" ")[0] ?? null}
         summary={summary}
+        chips={chips}
         coveragePct={coveragePct}
         coveredCount={personalCovered}
         activeCount={active.length}
@@ -245,12 +261,13 @@ export default async function DashboardPage() {
           pct: coveragePct,
           covered: personalCovered,
           active: active.length,
-          changeFromPrevious: history.changeFromPrevious,
+          change30: history.changeFrom30Days,
+          trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
         }}
         meetings={{
           upcoming: upcoming.meetings.length,
           nextLabel: nextMeeting ? formatDateTime(nextMeeting.start_at) : null,
-          awaitingNotes: (missingNotes ?? []).length,
+          awaitingNotes: noteCount,
         }}
         loans={loanComms}
         approvals={{
@@ -260,22 +277,21 @@ export default async function DashboardPage() {
         }}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_336px]">
-        <div className="min-w-0 space-y-5">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-5">
           <RelationshipRows
             rows={relationshipRows}
             completed={completedCount}
             total={topItems.length}
             hasPlan={Boolean(plan)}
           />
-
           <AttentionCard rows={attentionRows} />
-
-          <CoverageTrend history={history} />
           <StatusSegments segments={segments} />
         </div>
 
-        <UpcomingPanel data={upcoming} />
+        <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
+          <UpcomingPanel data={upcoming} />
+        </div>
       </div>
     </>
   );
