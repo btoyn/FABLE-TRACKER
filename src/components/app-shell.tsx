@@ -8,6 +8,7 @@ import {
   Landmark,
   CheckSquare,
   AlertCircle,
+  BookOpen,
   Settings,
   Trash2,
   Plus,
@@ -25,6 +26,7 @@ const NAV = [
 ] as const;
 
 const FOOTER_NAV = [
+  { href: "/guide", label: "Guide", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/trash", label: "Trash", icon: Trash2 },
 ];

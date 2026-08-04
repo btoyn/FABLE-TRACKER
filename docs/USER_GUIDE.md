@@ -3,6 +3,9 @@
 One system for ~120 commercial lenders. It answers one question — *who is slipping?* — in five
 minutes a day. Live at `fable-tracker.vercel.app`.
 
+This file is the single source for the guide: it renders inside the app at **Guide** in the sidebar,
+and reads as plain markdown on GitHub. Editing it updates both.
+
 ## How coverage works
 
 The app keeps a running clock on every lender, counting from the last time you actually spoke —
@@ -194,9 +197,10 @@ at daily.
 
 1. **Add the redirect addresses in Supabase** (Authentication → URL Configuration), with the
    `https://` prefix. Until then *Forgot password* fails; signing in normally already works.
-2. **Turn off the Vercel login wall** so the site opens on your phone. Your own login is the real
-   front door.
-3. **Set your annual approval goal** once that screen exists.
+2. **Set your annual approval goal** once that screen exists.
+
+Done: the Vercel login wall is off, so the site opens normally on any device and can be installed
+to your home screen.
 
 ---
 
