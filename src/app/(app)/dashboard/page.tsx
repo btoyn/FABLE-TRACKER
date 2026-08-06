@@ -13,7 +13,7 @@ import { getFlags } from "@/lib/flags";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { HeroHeader, type HeroChip } from "./hero-header";
-import { KpiCards } from "./kpi-cards";
+import { RelationshipMomentum } from "./momentum";
 import { AttentionCard, type AttentionRow } from "./attention-card";
 import { RelationshipRows, type RelationshipRow } from "./relationship-rows";
 import { UpcomingPanel } from "./upcoming-panel";
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
         aiEnabled={getFlags().ai}
       />
 
-      <KpiCards
+      <RelationshipMomentum
         coverage={{
           pct: coveragePct,
           covered: personalCovered,
@@ -264,12 +264,12 @@ export default async function DashboardPage() {
           change30: history.changeFrom30Days,
           trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
         }}
+        loans={loanComms}
         meetings={{
           upcoming: upcoming.meetings.length,
           nextLabel: nextMeeting ? formatDateTime(nextMeeting.start_at) : null,
           awaitingNotes: noteCount,
         }}
-        loans={loanComms}
         approvals={{
           ytd: approvalsYtd,
           goal: goal?.approval_goal ?? null,

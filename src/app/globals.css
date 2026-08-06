@@ -1,37 +1,58 @@
 @import "tailwindcss";
 
-/* Lender CRM theme — light mode only, royal blue accent on a cool-gray ground,
-   deep navy for emphasis, muted gold used sparingly. */
+/* Alpine Editorial theme — light mode only. Color carries meaning here:
+   royal blue for relationship activity and primary actions, sunrise gold for
+   pending work, alpine teal for confirmed and healthy, muted plum for personal
+   relationship intelligence, critical red for blocked or seriously overdue. */
 :root {
-  --background: #f6f8fc;
+  --background: #f5f7fb;
   --surface: #ffffff;
   --foreground: #182338;
   --muted: #62708a;
-  --border: #e7ecf5;
+  --border: #e5eaf3;
 
   --primary: #3157d5;
   --primary-hover: #2848b8;
-  --primary-soft: #eef2fe;
+  --primary-soft: #eef3ff;
   --primary-foreground: #ffffff;
 
   --navy: #1a2f63;
   --navy-soft: #e8ecf6;
 
-  --gold: #d8a84e;
-  --gold-soft: #fbf4e6;
+  /* Sunrise gold — due soon, pending, needs attention */
+  --gold: #c88d20;
+  --gold-soft: #fff5df;
   --gold-border: #f0e2c4;
 
-  /* Sidebar chrome */
-  --sidebar: #f3f6fb;
-  --sidebar-border: #e4eaf4;
+  /* Alpine teal — confirmed, completed, healthy */
+  --teal: #278477;
+  --teal-soft: #eaf7f4;
+  --teal-border: #cfe8e3;
 
-  /* Status colors, kept restrained */
-  --success: #157f3d;
-  --success-soft: #e8f5ec;
-  --warning: #a3690a;
-  --warning-soft: #fdf3e3;
-  --danger: #b3372f;
-  --danger-soft: #fceceb;
+  /* Muted plum — personal notes and relationship intelligence */
+  --plum: #745c9e;
+  --plum-soft: #f3eff8;
+  --plum-border: #e2d9ee;
+
+  /* Critical red — seriously overdue or blocked */
+  --danger: #c95055;
+  --danger-soft: #fff0f1;
+  --danger-border: #f5d5d7;
+
+  /* Semantic aliases kept so existing components inherit the new palette */
+  --success: var(--teal);
+  --success-soft: var(--teal-soft);
+  --warning: var(--gold);
+  --warning-soft: var(--gold-soft);
+
+  /* Sidebar chrome */
+  --sidebar: #f1f4fa;
+  --sidebar-border: #e3e9f3;
+
+  /* Hero gradient */
+  --banner-from: #1a2f63;
+  --banner-via: #2a4bb4;
+  --banner-to: #3157d5;
 }
 
 @theme inline {
@@ -49,21 +70,32 @@
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
   --color-gold-border: var(--gold-border);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-border: var(--sidebar-border);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-border: var(--teal-border);
+  --color-plum: var(--plum);
+  --color-plum-soft: var(--plum-soft);
+  --color-plum-border: var(--plum-border);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-banner-from: var(--banner-from);
+  --color-banner-via: var(--banner-via);
+  --color-banner-to: var(--banner-to);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Depth: layered rather than a single flat ring, to avoid the "box of boxes" look */
+  /* Layered depth rather than one flat ring */
   --shadow-card: 0 1px 2px rgba(24, 35, 56, 0.04), 0 4px 12px rgba(24, 35, 56, 0.05);
   --shadow-lift: 0 2px 4px rgba(24, 35, 56, 0.05), 0 10px 24px rgba(24, 35, 56, 0.08);
   --shadow-hero: 0 4px 16px rgba(26, 47, 99, 0.16), 0 16px 40px rgba(26, 47, 99, 0.14);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 body {
@@ -77,4 +109,12 @@ h1,
 h2,
 h3 {
   letter-spacing: -0.015em;
+}
+
+/* Section eyebrow used across the lower dashboard */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }

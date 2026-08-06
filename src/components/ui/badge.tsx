@@ -8,19 +8,22 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary-soft text-primary",
-        success: "bg-success-soft text-success",
-        warning: "bg-warning-soft text-warning",
-        danger: "bg-danger-soft text-danger",
+        /* Pill text runs a shade darker than the pure semantic hue — the brand
+           values sit near 3:1 on their own tints, which is thin for 12px type. */
+        default: "bg-primary-soft text-[#2a49b4]",
+        success: "bg-teal-soft text-[#1f6b60]",
+        warning: "bg-gold-soft text-[#8a6215]",
+        danger: "bg-danger-soft text-[#a8434a]",
         muted: "bg-black/[0.04] text-muted",
         outline: "border border-border text-muted",
 
-        /* Pale pill set: overdue timing, meeting type, territory, brief status, trip planning */
-        overdue: "bg-[#fdecea] text-[#a8382f]",
-        meeting: "bg-[#eaf0fe] text-[#2c4fbd]",
-        territory: "bg-[#eef1f7] text-[#5a6884]",
-        pending: "bg-[#fdf3e0] text-[#96650b]",
-        planning: "bg-[#faf3e3] text-[#9a7526]",
+        /* Pale pill set: overdue timing, meeting type, territory, pending, planning, personal */
+        overdue: "bg-danger-soft text-[#a8434a]",
+        meeting: "bg-primary-soft text-[#2a49b4]",
+        territory: "bg-[#eef1f7] text-[#59678a]",
+        pending: "bg-gold-soft text-[#8a6215]",
+        planning: "bg-gold-soft text-[#8a6215]",
+        personal: "bg-plum-soft text-[#5e4a85]",
       },
       size: {
         sm: "px-2 py-0.5",
