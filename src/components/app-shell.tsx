@@ -11,10 +11,11 @@ import {
   BookOpen,
   Settings,
   Trash2,
-  Plus,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NavCounts } from "@/lib/data";
+import { QuickLog } from "@/components/quick-log";
+import type { NavCounts, QuickLogData } from "@/lib/data";
 
 /** Import lives in Settings, not primary navigation. */
 const PRIMARY_NAV = [
@@ -31,11 +32,14 @@ const UTILITY_NAV = [
   { href: "/trash", label: "Trash", icon: Trash2 },
 ];
 
-// Mobile priorities: today, search a lender, add, follow-ups, settings
-const MOBILE_NAV = [
+/* The centre slot is the quick-log trigger, not a link — logging happens daily
+   while adding a lender is occasional and already prominent on Lenders. */
+const MOBILE_LEFT = [
   { href: "/dashboard", label: "Today", icon: LayoutDashboard },
   { href: "/lenders", label: "Lenders", icon: Users },
-  { href: "/lenders/new", label: "Add", icon: Plus },
+];
+
+const MOBILE_RIGHT = [
   { href: "/follow-ups", label: "Follow-ups", icon: CheckSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -89,14 +93,47 @@ function NavLink({
   );
 }
 
+function MobileLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+  counts,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  counts?: NavCounts;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:bg-primary-soft",
+        active ? "text-primary" : "text-muted",
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      {label}
+      {href === "/follow-ups" && (counts?.followUps ?? 0) > 0 && (
+        <span className="absolute right-[22%] top-2 h-1.5 w-1.5 rounded-full bg-primary" />
+      )}
+    </Link>
+  );
+}
+
 export function AppShell({
   children,
   userEmail,
   counts,
+  quickLog,
 }: {
   children: React.ReactNode;
   userEmail?: string;
   counts?: NavCounts;
+  quickLog: QuickLogData;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
@@ -112,6 +149,18 @@ export function AppShell({
           </span>
           <span className="text-[15px] font-semibold tracking-[-0.01em]">Lender CRM</span>
         </Link>
+
+        <QuickLog data={quickLog}>
+          {(open) => (
+            <button
+              onClick={open}
+              className="mb-4 flex h-10 items-center justify-center gap-2 rounded-[10px] bg-primary text-[13.5px] font-semibold text-white shadow-[0_2px_8px_rgba(49,87,213,0.28)] transition-all duration-150 hover:bg-primary-hover active:translate-y-px"
+            >
+              <Phone className="h-4 w-4" />
+              Log a call
+            </button>
+          )}
+        </QuickLog>
 
         <nav className="flex flex-col gap-0.5" aria-label="Main">
           {PRIMARY_NAV.map((item) => (
@@ -148,26 +197,28 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label="Main"
       >
-        {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
-          const active = isActive(href) && href !== "/lenders/new";
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:bg-primary-soft",
-                active ? "text-primary" : "text-muted",
-              )}
+        {MOBILE_LEFT.map((item) => (
+          <MobileLink key={item.href} {...item} active={isActive(item.href)} counts={counts} />
+        ))}
+
+        <QuickLog data={quickLog}>
+          {(open) => (
+            <button
+              onClick={open}
+              aria-label="Log a call"
+              className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-primary transition-colors active:bg-primary-soft"
             >
-              <Icon className="h-5 w-5" />
-              {label}
-              {href === "/follow-ups" && (counts?.followUps ?? 0) > 0 && (
-                <span className="absolute right-[22%] top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-              )}
-            </Link>
-          );
-        })}
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-[0_2px_6px_rgba(49,87,213,0.35)]">
+                <Phone className="h-4 w-4" />
+              </span>
+              Log
+            </button>
+          )}
+        </QuickLog>
+
+        {MOBILE_RIGHT.map((item) => (
+          <MobileLink key={item.href} {...item} active={isActive(item.href)} counts={counts} />
+        ))}
       </nav>
     </div>
   );

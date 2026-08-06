@@ -120,6 +120,95 @@ export async function getNavCounts(): Promise<NavCounts> {
   };
 }
 
+export interface QuickLogLender {
+  id: string;
+  name: string;
+  institution: string | null;
+  /** Last one-to-one touch, for ordering and the "last spoke" hint. */
+  lastTouchAt: string | null;
+  onThisWeeksList: boolean;
+}
+
+export interface QuickLogData {
+  lenders: QuickLogLender[];
+  /** Ids to offer before the user types anything. */
+  suggestedIds: string[];
+}
+
+/**
+ * Everything the quick-log sheet needs. Offered before any typing: this week's
+ * list first, then whoever you spoke to most recently — so the common case is
+ * one tap rather than a search.
+ */
+export async function getQuickLogLenders(): Promise<QuickLogData> {
+  const supabase = await createClient();
+
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay();
+  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekStart = d.toISOString().slice(0, 10);
+
+  const [{ data: lenders }, { data: coverage }, { data: plan }] = await Promise.all([
+    supabase
+      .from("lenders")
+      .select("id, full_name, institution:institutions(name)")
+      .eq("active", true)
+      .is("deleted_at", null)
+      .order("full_name"),
+    supabase.from("lender_coverage").select("lender_id, last_personal_touch_at"),
+    supabase
+      .from("weekly_relationship_plans")
+      .select("id, items:weekly_relationship_plan_items(lender_id, list_type, status, rank)")
+      .eq("week_start", weekStart)
+      .maybeSingle(),
+  ]);
+
+  const touchByLender = new Map<string, string | null>(
+    (coverage ?? []).map((c: { lender_id: string; last_personal_touch_at: string | null }) => [
+      c.lender_id,
+      c.last_personal_touch_at,
+    ]),
+  );
+
+  const planItems = (
+    (plan?.items ?? []) as unknown as {
+      lender_id: string;
+      list_type: string;
+      status: string;
+      rank: number;
+    }[]
+  )
+    .filter((i) => i.list_type === "top" && i.status === "open")
+    .sort((a, b) => a.rank - b.rank);
+  const planIds = planItems.map((i) => i.lender_id);
+  const planSet = new Set(planIds);
+
+  const list: QuickLogLender[] = (
+    (lenders ?? []) as unknown as {
+      id: string;
+      full_name: string;
+      institution: { name: string } | null;
+    }[]
+  ).map((l) => ({
+    id: l.id,
+    name: l.full_name,
+    institution: l.institution?.name ?? null,
+    lastTouchAt: touchByLender.get(l.id) ?? null,
+    onThisWeeksList: planSet.has(l.id),
+  }));
+
+  const recentlyTouched = [...list]
+    .filter((l) => l.lastTouchAt && !planSet.has(l.id))
+    .sort((a, b) => (b.lastTouchAt ?? "").localeCompare(a.lastTouchAt ?? ""))
+    .map((l) => l.id);
+
+  return {
+    lenders: list,
+    suggestedIds: [...planIds, ...recentlyTouched].slice(0, 8),
+  };
+}
+
 /** Seed the demo workspace for brand-new accounts (spec §14). */
 export async function ensureSampleData(): Promise<void> {
   const supabase = await createClient();

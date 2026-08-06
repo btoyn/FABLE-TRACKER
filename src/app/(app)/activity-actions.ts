@@ -79,6 +79,51 @@ function currentWeekStart(): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * One round-trip for the quick-log sheet: the touch, plus an optional promise
+ * caught in the same breath — "I said I'd send the comparison sheet" is far
+ * more reliable recorded now than remembered later.
+ */
+export async function quickLogTouch(input: {
+  lenderId: string;
+  activityType: string;
+  occurredAt?: string;
+  summary?: string;
+  initiatedByLender?: boolean;
+  promise?: {
+    direction: "i_promised" | "they_promised";
+    description: string;
+    dueAt?: string;
+  };
+}): Promise<{ error?: string }> {
+  if (!input.lenderId) return { error: "Pick a lender first." };
+
+  const logged = await logActivity({
+    lenderId: input.lenderId,
+    activityType: input.activityType,
+    occurredAt: input.occurredAt,
+    summary: input.summary,
+    initiatedByLender: input.initiatedByLender,
+  });
+  if (logged.error) return logged;
+
+  if (input.promise?.description.trim()) {
+    const promised = await addPromise({
+      lenderId: input.lenderId,
+      direction: input.promise.direction,
+      description: input.promise.description,
+      dueAt: input.promise.dueAt,
+    });
+    // The touch is already saved, so surface the promise failure without
+    // pretending the whole thing failed.
+    if (promised.error) {
+      return { error: `Touch saved, but the promise didn't: ${promised.error}` };
+    }
+  }
+
+  return {};
+}
+
 export async function addPromise(input: {
   lenderId: string;
   direction: "i_promised" | "they_promised";

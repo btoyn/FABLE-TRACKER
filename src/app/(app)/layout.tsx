@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
-import { getNavCounts } from "@/lib/data";
+import { getNavCounts, getQuickLogLenders } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -11,10 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect("/login");
 
-  const counts = await getNavCounts();
+  const [counts, quickLog] = await Promise.all([getNavCounts(), getQuickLogLenders()]);
 
   return (
-    <AppShell userEmail={user.email} counts={counts}>
+    <AppShell userEmail={user.email} counts={counts} quickLog={quickLog}>
       {children}
     </AppShell>
   );
