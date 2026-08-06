@@ -1,22 +1,28 @@
-import { StatusSegments } from "@/components/charts/status-segments";
 import { createClient } from "@/lib/supabase/server";
 import { ensureSampleData, getLendersWithCoverage } from "@/lib/data";
 import {
-  buildStatusSegments,
+  buildCoverageSplit,
+  buildLenderDots,
   getCoverageHistory,
-  getLoanCommunication,
+  getLoanStatuses,
+  getRelationshipContext,
   getUpcoming,
-  personalContactPhrase,
   weekStartOf,
 } from "@/lib/dashboard";
 import { getFlags } from "@/lib/flags";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { HeroHeader, type HeroChip } from "./hero-header";
 import { RelationshipMomentum } from "./momentum";
-import { AttentionCard, type AttentionRow } from "./attention-card";
-import { RelationshipRows, type RelationshipRow } from "./relationship-rows";
-import { UpcomingPanel } from "./upcoming-panel";
+import { TodayRibbon, type RibbonData } from "./today-ribbon";
+import {
+  RelationshipRows,
+  type PrimaryActionKind,
+  type ReasonChip,
+  type RelationshipRow,
+} from "./relationship-rows";
+import { AgendaRail } from "./agenda-rail";
+import type { AvatarStatus } from "@/components/ui/avatar";
 
 export const metadata = { title: "Dashboard" };
 
@@ -35,8 +41,6 @@ function greeting(): string {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-type LenderRef = { id: string; full_name: string } | null;
-
 export default async function DashboardPage() {
   await ensureSampleData();
 
@@ -52,13 +56,13 @@ export default async function DashboardPage() {
     { data: profile },
     { data: missingNotes },
     { data: overduePromises },
-    { data: loansDue },
     { data: approvals },
     { data: goal },
     { data: plan },
     upcoming,
     history,
-    loanComms,
+    loanStatuses,
+    context,
   ] = await Promise.all([
     getLendersWithCoverage(),
     supabase.from("users").select("display_name").maybeSingle(),
@@ -77,12 +81,6 @@ export default async function DashboardPage() {
       .order("due_at"),
     supabase
       .from("active_loans")
-      .select("id, borrower_name, stage, next_update_due_at, lender:lenders(id, full_name)")
-      .eq("updates_active", true)
-      .lte("next_update_due_at", today)
-      .is("deleted_at", null),
-    supabase
-      .from("active_loans")
       .select("approved_sba_amount")
       .eq("stage", "sba_approved")
       .gte("sba_approval_date", `${year}-01-01`)
@@ -95,22 +93,23 @@ export default async function DashboardPage() {
       .maybeSingle(),
     getUpcoming(),
     getCoverageHistory(),
-    getLoanCommunication(),
+    getLoanStatuses(),
+    getRelationshipContext(),
   ]);
 
-  // ---- Coverage headline ---------------------------------------------------
+  // ---- Coverage ------------------------------------------------------------
   const active = lenders.filter((l) => l.active);
   const personalCovered = active.filter((l) => l.coverage.personal === "on_track").length;
   const coveragePct =
     active.length === 0 ? 0 : Math.round((personalCovered / active.length) * 100);
-  const segments = buildStatusSegments(lenders);
+  const split = buildCoverageSplit(lenders);
 
-  // ---- This week's plan ---------------------------------------------------
+  // ---- This week's plan ----------------------------------------------------
   const planItemsResult = plan
     ? await supabase
         .from("weekly_relationship_plan_items")
         .select(
-          "id, rank, status, explanation, recommended_action, lender:lenders(id, full_name, first_name, email, mobile_phone, territory, institution:institutions(name))",
+          "id, rank, status, recommended_action, lender:lenders(id, full_name, first_name, email, mobile_phone, territory, relationship_tier, preferred_contact_method, institution:institutions(name))",
         )
         .eq("plan_id", plan.id)
         .eq("list_type", "top")
@@ -131,11 +130,63 @@ export default async function DashboardPage() {
         email: string | null;
         mobile_phone: string | null;
         territory: string | null;
+        relationship_tier: string;
+        preferred_contact_method: string | null;
         institution: { name: string } | null;
       } | null;
       if (!lender) return null;
+
       const coverage = coverageById.get(lender.id);
       const days = coverage?.daysSincePersonal ?? null;
+      const personal = coverage?.personal ?? "never_contacted";
+      const hasLoan = context.activeLoanLenders.has(lender.id);
+      const hasFollowUp = context.openFollowUpLenders.has(lender.id);
+      const hasTopic = context.personalTopicLenders.has(lender.id);
+      const isInbound = context.recentInboundLenders.has(lender.id);
+      const nearTrip =
+        context.tripTerritory !== null && lender.territory === context.tripTerritory;
+
+      // The avatar dot and the left rail share one status, worst signal first.
+      const status: AvatarStatus =
+        personal === "overdue" ||
+        personal === "seriously_overdue" ||
+        personal === "never_contacted"
+          ? "overdue"
+          : personal === "grace"
+            ? "grace"
+            : isInbound
+              ? "inbound"
+              : lender.relationship_tier === "A"
+                ? "priority"
+                : "none";
+
+      const chips: ReasonChip[] = [
+        days === null
+          ? { label: "No personal contact yet", tone: "red" as const }
+          : {
+              label: `${days} days since contact`,
+              tone:
+                personal === "overdue" || personal === "seriously_overdue"
+                  ? ("red" as const)
+                  : personal === "grace"
+                    ? ("gold" as const)
+                    : ("slate" as const),
+            },
+        hasFollowUp && { label: "Open follow-up", tone: "gold" as const },
+        hasLoan && { label: "Active loan", tone: "blue" as const },
+        nearTrip && { label: "Near upcoming trip", tone: "teal" as const },
+        hasTopic && { label: "Personal topic available", tone: "plum" as const },
+        isInbound && { label: "They reached out", tone: "teal" as const },
+      ].filter(Boolean) as ReasonChip[];
+
+      const primary: PrimaryActionKind = hasLoan
+        ? "draft_update"
+        : hasFollowUp
+          ? "log_followup"
+          : lender.preferred_contact_method === "in_person"
+            ? "invite_lunch"
+            : "draft_checkin";
+
       return {
         itemId: item.id,
         lenderId: lender.id,
@@ -145,79 +196,50 @@ export default async function DashboardPage() {
         territory: lender.territory,
         email: lender.email,
         mobile: lender.mobile_phone,
-        daysSincePersonal: days,
-        contactPhrase: personalContactPhrase(days),
-        reason: item.explanation ?? "Chosen to keep the relationship warm",
-        suggestedAction: item.recommended_action ?? "Send a short personal check-in",
-        urgent: days === null || days > 40,
+        status,
+        chips: chips.slice(0, 4),
+        suggestion: item.recommended_action ?? "Send a short personal check-in",
+        primary,
       };
     })
     .filter((r): r is RelationshipRow => r !== null);
 
-  // ---- Today's attention --------------------------------------------------
-  const attentionRows: AttentionRow[] = [
-    ...(overduePromises ?? []).map((p): AttentionRow => {
-      const lender = p.lender as unknown as LenderRef;
-      const daysLate = p.due_at
-        ? Math.floor((nowMs - new Date(p.due_at).getTime()) / 86_400_000)
-        : 0;
-      return {
-        kind: "promise",
-        id: p.id,
-        urgency: daysLate > 3 ? "high" : "medium",
-        title:
-          p.direction === "i_promised"
-            ? `You owe: ${p.description}`
-            : `They owe you: ${p.description}`,
-        meta: `${lender?.full_name ?? "Unassigned"} · was due ${formatDate(p.due_at)}`,
-        lenderId: lender?.id ?? null,
-      };
-    }),
-    ...(loansDue ?? []).map((loan): AttentionRow => {
-      const lender = loan.lender as unknown as LenderRef;
-      const daysLate = loan.next_update_due_at
-        ? Math.floor((nowMs - new Date(loan.next_update_due_at).getTime()) / 86_400_000)
-        : 0;
-      return {
-        kind: "loan",
-        id: loan.id,
-        urgency: daysLate > 2 ? "high" : "medium",
-        title: `Weekly update due — ${loan.borrower_name}`,
-        meta: `${loan.stage.replace(/_/g, " ")}${
-          lender ? ` · ${lender.full_name}` : ""
-        } · due ${formatDate(loan.next_update_due_at)}`,
-        lenderId: lender?.id ?? null,
-      };
-    }),
-    ...(missingNotes ?? []).map((m): AttentionRow => {
-      const daysAgo = m.start_at
-        ? Math.floor((nowMs - new Date(m.start_at).getTime()) / 86_400_000)
-        : 0;
-      return {
-        kind: "notes",
-        id: m.id,
-        urgency: daysAgo > 1 ? "high" : "medium",
-        title: `Notes not captured — ${m.title}`,
-        meta: `${MEETING_TYPE_LABELS[m.meeting_type] ?? m.meeting_type} · ${formatDateTime(
-          m.start_at,
-        )}`,
-        lenderId: null,
-      };
-    }),
-  ].sort((a, b) => (a.urgency === b.urgency ? 0 : a.urgency === "high" ? -1 : 1));
+  // ---- Today ribbon --------------------------------------------------------
+  const promises = overduePromises ?? [];
+  const worstDaysLate = promises.reduce((worst, p) => {
+    if (!p.due_at) return worst;
+    return Math.max(worst, Math.floor((nowMs - new Date(p.due_at).getTime()) / 86_400_000));
+  }, 0);
 
-  // ---- Hero copy ----------------------------------------------------------
-  const promiseCount = (overduePromises ?? []).length;
+  const dueLoans = loanStatuses.filter((l) => l.state !== "updated");
+
+  const ribbon: RibbonData = {
+    notes: (missingNotes ?? []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      when: `${MEETING_TYPE_LABELS[m.meeting_type] ?? m.meeting_type} · ${formatDateTime(m.start_at)}`,
+    })),
+    promises: { count: promises.length, worstDaysLate },
+    loansDue: dueLoans.map((l) => ({
+      id: l.id,
+      borrower: l.borrower,
+      detail: [l.lenderName, l.daysLate > 0 ? `${l.daysLate}d late` : "due now"]
+        .filter(Boolean)
+        .join(" · "),
+      overdue: l.state === "overdue",
+    })),
+  };
+
+  // ---- Hero ----------------------------------------------------------------
   const noteCount = (missingNotes ?? []).length;
-
   const chips: HeroChip[] = [
-    promiseCount > 0 && {
+    promises.length > 0 && {
       icon: "promise" as const,
-      label: `${plural(promiseCount, "overdue promise")}`,
+      label: plural(promises.length, "overdue promise"),
     },
-    loanComms.dueNow > 0 && {
+    dueLoans.length > 0 && {
       icon: "loan" as const,
-      label: `${plural(loanComms.dueNow, "loan update")} due`,
+      label: `${plural(dueLoans.length, "loan update")} due`,
     },
     relationshipRows.length > 0 && {
       icon: "list" as const,
@@ -225,7 +247,7 @@ export default async function DashboardPage() {
     },
   ].filter(Boolean) as HeroChip[];
 
-  const openItems = promiseCount + loanComms.dueNow + noteCount;
+  const openItems = promises.length + dueLoans.length + noteCount;
   const summary =
     openItems === 0
       ? relationshipRows.length > 0
@@ -256,41 +278,55 @@ export default async function DashboardPage() {
         aiEnabled={getFlags().ai}
       />
 
-      <RelationshipMomentum
-        coverage={{
-          pct: coveragePct,
-          covered: personalCovered,
-          active: active.length,
-          change30: history.changeFrom30Days,
-          trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
-        }}
-        loans={loanComms}
-        meetings={{
-          upcoming: upcoming.meetings.length,
-          nextLabel: nextMeeting ? formatDateTime(nextMeeting.start_at) : null,
-          awaitingNotes: noteCount,
-        }}
-        approvals={{
-          ytd: approvalsYtd,
-          goal: goal?.approval_goal ?? null,
-          amount: approvedAmount,
-        }}
-      />
+      {/* Phones lead with today's work and end with the momentum summary;
+          desktop leads with momentum. */}
+      <div className="flex flex-col gap-5">
+        <div className="order-3 xl:order-1">
+          <RelationshipMomentum
+            coverage={{
+              pct: coveragePct,
+              covered: personalCovered,
+              active: active.length,
+              change30: history.changeFrom30Days,
+              trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
+              dots: buildLenderDots(lenders),
+            }}
+            loans={{ statuses: loanStatuses, dueNow: dueLoans.length }}
+            meetings={{
+              upcoming: upcoming.meetings.length,
+              next: nextMeeting
+                ? {
+                    title: nextMeeting.title,
+                    startAt: nextMeeting.start_at,
+                    type: nextMeeting.meeting_type,
+                    withWhom: nextMeeting.attendees[0] ?? null,
+                  }
+                : null,
+              awaitingNotes: noteCount,
+            }}
+            approvals={{
+              ytd: approvalsYtd,
+              goal: goal?.approval_goal ?? null,
+              amount: approvedAmount,
+            }}
+            split={split}
+          />
+        </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="order-1 xl:order-2">
+          <TodayRibbon data={ribbon} />
+        </div>
+
+        <div className="order-2 grid gap-5 xl:order-3 xl:grid-cols-[minmax(0,1fr)_344px]">
           <RelationshipRows
             rows={relationshipRows}
             completed={completedCount}
             total={topItems.length}
             hasPlan={Boolean(plan)}
           />
-          <AttentionCard rows={attentionRows} />
-          <StatusSegments segments={segments} />
-        </div>
-
-        <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
-          <UpcomingPanel data={upcoming} />
+          <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
+            <AgendaRail data={upcoming} />
+          </div>
         </div>
       </div>
     </>

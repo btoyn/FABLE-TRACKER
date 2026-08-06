@@ -1,12 +1,23 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BadgeCheck,
+  CalendarDays,
+  HeartHandshake,
+  Minus,
+  MessageSquareDot,
+} from "lucide-react";
 import { Sparkline } from "@/components/charts/sparkline";
+import { DateTile, IconCircle, type IconCircleTone } from "@/components/ui/icon-circle";
+import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { formatCurrency, cn } from "@/lib/utils";
+import type { CoverageSplitKey, CoverageSplitSegment, LoanStatus } from "@/lib/dashboard";
 
 /**
- * Relationship Momentum — one composed surface rather than four floating cards.
- * Each zone owns a semantic color: royal blue for relationship activity, gold
- * for pending work, teal for confirmed and healthy, navy for the annual goal.
+ * Relationship Momentum — one composed surface, four zones, then a full-width
+ * coverage bar. Colour carries meaning: blue for relationship activity, gold for
+ * pending work, teal for confirmed and healthy, navy for the annual goal.
  */
 
 export interface MomentumProps {
@@ -16,11 +27,30 @@ export interface MomentumProps {
     active: number;
     change30: number | null;
     trend: number[];
+    /** One entry per active lender, for the no-history fallback. */
+    dots: CoverageSplitKey[];
   };
-  loans: { activeLoans: number; updatedThisWeek: number; dueNow: number };
-  meetings: { upcoming: number; nextLabel: string | null; awaitingNotes: number };
+  loans: { statuses: LoanStatus[]; dueNow: number };
+  meetings: {
+    upcoming: number;
+    next: { title: string; startAt: string | null; type: string; withWhom: string | null } | null;
+    awaitingNotes: number;
+  };
   approvals: { ytd: number; goal: number | null; amount: number };
+  split: CoverageSplitSegment[];
 }
+
+const DOT_STYLE: Record<CoverageSplitKey, string> = {
+  personal: "bg-primary",
+  campaign: "bg-gold",
+  uncovered: "bg-[#ccd3e0]",
+};
+
+const DOT_LABEL: Record<CoverageSplitKey, string> = {
+  personal: "Personal touch",
+  campaign: "Campaign only",
+  uncovered: "Uncovered",
+};
 
 /** Faint alpine contour texture. Decorative, 3% opacity, stretches to fill. */
 function ContourTexture() {
@@ -28,14 +58,14 @@ function ContourTexture() {
     <svg
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.03]"
-      viewBox="0 0 1200 260"
+      viewBox="0 0 1200 300"
       preserveAspectRatio="none"
       fill="none"
     >
-      {[0, 26, 52, 78, 104, 130, 156, 182, 208].map((offset, i) => (
+      {[0, 30, 60, 90, 120, 150, 180, 210, 240].map((offset, i) => (
         <path
           key={offset}
-          d={`M-40 ${210 - offset} C 140 ${180 - offset}, 250 ${236 - offset}, 430 ${204 - offset} S 700 ${150 - offset}, 880 ${188 - offset} S 1120 ${226 - offset}, 1240 ${172 - offset}`}
+          d={`M-40 ${250 - offset} C 140 ${218 - offset}, 250 ${276 - offset}, 430 ${242 - offset} S 700 ${186 - offset}, 880 ${226 - offset} S 1120 ${266 - offset}, 1240 ${210 - offset}`}
           stroke="#1a2f63"
           strokeWidth={i % 3 === 0 ? 1.6 : 1}
         />
@@ -44,214 +74,80 @@ function ContourTexture() {
   );
 }
 
-function ZoneLabel({ children, tone }: { children: React.ReactNode; tone: string }) {
-  return <p className={cn("eyebrow", tone)}>{children}</p>;
+function ZoneHead({
+  icon,
+  tone,
+  label,
+  right,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  tone: IconCircleTone;
+  label: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-flex items-center gap-2.5">
+        <IconCircle icon={icon} tone={tone} size="sm" />
+        <span className="eyebrow text-muted">{label}</span>
+      </span>
+      {right}
+    </div>
+  );
 }
 
-function Delta({ change }: { change: number }) {
+function TrendLabel({ change }: { change: number }) {
   const flat = change === 0;
   const up = change > 0;
   const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
-        flat ? "bg-black/[0.04] text-muted" : up ? "bg-teal-soft text-teal" : "bg-danger-soft text-danger",
+        "inline-flex items-center gap-1 text-[11.5px] font-semibold",
+        flat ? "text-muted" : up ? "text-teal" : "text-danger",
       )}
     >
-      <Icon className="h-3 w-3" />
-      {flat ? "flat" : `${up ? "+" : "−"}${Math.abs(change)}`}
+      <Icon className="h-3.5 w-3.5" />
+      {flat ? "Flat in 30 days" : `${up ? "+" : "−"}${Math.abs(change)} points in 30 days`}
     </span>
-  );
-}
-
-/** Compact per-loan pips — a summary you can count, not a thin bar. */
-function LoanPips({ total, updated }: { total: number; updated: number }) {
-  if (total === 0 || total > 12) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-1" aria-hidden="true">
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-2 w-5 rounded-full",
-            i < updated ? "bg-teal" : "bg-gold/45 ring-1 ring-inset ring-gold/40",
-          )}
-        />
-      ))}
-    </div>
   );
 }
 
 const ZONE_BORDERS = [
   "",
-  "border-t border-border sm:border-t-0 sm:border-l",
-  "border-t border-border xl:border-t-0 xl:border-l",
-  "border-t border-border sm:border-l xl:border-t-0",
+  "border-t border-border/70 sm:border-t-0 sm:border-l",
+  "border-t border-border/70 xl:border-t-0 xl:border-l",
+  "border-t border-border/70 sm:border-l xl:border-t-0",
 ];
 
-export function RelationshipMomentum({ coverage, loans, meetings, approvals }: MomentumProps) {
-  const loanTone = loans.dueNow > 0 ? "text-gold" : "text-teal";
+export function RelationshipMomentum({
+  coverage,
+  loans,
+  meetings,
+  approvals,
+  split,
+}: MomentumProps) {
+  const total = split.reduce((sum, s) => sum + s.count, 0);
+  const updatedLoans = loans.statuses.filter((l) => l.state === "updated").length;
+  const overdueLoans = loans.statuses.filter((l) => l.state === "overdue").length;
+  // The headline counts completed touches, so it stays navy; urgency lives in
+  // the per-loan blocks, the icon tint and the action button.
+  const loanTone = loans.statuses.length === 0 ? "text-muted" : "text-navy";
   const approvalPct =
     approvals.goal && approvals.goal > 0
       ? Math.min(100, (approvals.ytd / approvals.goal) * 100)
       : 0;
 
-  const zones = [
-    /* ---- A. Personal coverage — royal blue, the relationship number ---- */
-    <>
-      <div className="flex items-center justify-between gap-2">
-        <ZoneLabel tone="text-primary">Personal coverage</ZoneLabel>
-        {coverage.change30 !== null && <Delta change={coverage.change30} />}
-      </div>
-      <p className="mt-2.5 text-[38px] font-bold leading-none tracking-[-0.03em] text-primary tabular-nums">
-        {coverage.pct}
-        <span className="text-[22px] font-semibold">%</span>
-      </p>
-      <p className="mt-1.5 text-[13px] text-muted">
-        <span className="font-semibold text-foreground">
-          {coverage.covered} of {coverage.active}
-        </span>{" "}
-        lenders
-      </p>
-      <div className="mt-auto pt-4">
-        {coverage.trend.length >= 2 ? (
-          <>
-            <Sparkline values={coverage.trend} className="h-8 w-full" label="Coverage trend" />
-            <p className="mt-1 text-[10.5px] font-medium uppercase tracking-[0.09em] text-muted/75">
-              Last 8 weeks
-            </p>
-          </>
-        ) : (
-          /* No history yet: a segmented meter still reads at a glance. */
-          <>
-            <div className="flex gap-1" aria-hidden="true">
-              {Array.from({ length: 10 }, (_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    "h-1.5 flex-1 rounded-full",
-                    i < Math.round(coverage.pct / 10) ? "bg-primary" : "bg-primary/12",
-                  )}
-                />
-              ))}
-            </div>
-            <p className="mt-1 text-[10.5px] font-medium uppercase tracking-[0.09em] text-muted/75">
-              Trend builds over 8 weeks
-            </p>
-          </>
-        )}
-      </div>
-    </>,
-
-    /* ---- B. Weekly loan communication — gold when due, teal when current ---- */
-    <>
-      <ZoneLabel tone={loans.dueNow > 0 ? "text-gold" : "text-teal"}>Loan communication</ZoneLabel>
-      <p className={cn("mt-2.5 text-[38px] font-bold leading-none tracking-[-0.03em] tabular-nums", loanTone)}>
-        {loans.activeLoans === 0 ? "—" : loans.updatedThisWeek}
-        {loans.activeLoans > 0 && (
-          <span className="text-[22px] font-semibold text-muted">/{loans.activeLoans}</span>
-        )}
-      </p>
-      <p className="mt-1.5 text-[13px] text-muted">
-        {loans.activeLoans === 0 ? "No active loans" : "touched this week"}
-      </p>
-      <div className="mt-auto pt-4">
-        <LoanPips total={loans.activeLoans} updated={loans.updatedThisWeek} />
-        <p
-          className={cn(
-            "mt-2 text-[11.5px] font-semibold",
-            loans.dueNow > 0 ? "text-gold" : "text-teal",
-          )}
-        >
-          {loans.activeLoans === 0
-            ? "Nothing to chase"
-            : loans.dueNow > 0
-              ? `${loans.dueNow} due now`
-              : "All current"}
-        </p>
-      </div>
-    </>,
-
-    /* ---- C. Meetings — teal, because a booked meeting is coverage banked ---- */
-    <>
-      <ZoneLabel tone="text-teal">Meetings</ZoneLabel>
-      <p className="mt-2.5 text-[38px] font-bold leading-none tracking-[-0.03em] text-teal tabular-nums">
-        {meetings.upcoming}
-      </p>
-      <p className="mt-1.5 text-[13px] text-muted">
-        {meetings.upcoming === 1 ? "confirmed ahead" : "confirmed ahead"}
-      </p>
-      <div className="mt-auto pt-4">
-        {meetings.upcoming === 0 ? (
-          <p className="text-[12px] leading-relaxed text-muted">
-            Booking one covers that lender immediately.
-          </p>
-        ) : (
-          <>
-            <p className="text-[12.5px] font-semibold text-foreground">{meetings.nextLabel}</p>
-            <p className="mt-0.5 text-[11.5px] text-muted">
-              {meetings.awaitingNotes > 0
-                ? `${meetings.awaitingNotes} awaiting notes`
-                : "Notes all captured"}
-            </p>
-          </>
-        )}
-      </div>
-    </>,
-
-    /* ---- D. Annual SBA approvals — navy value against a teal goal bar ---- */
-    <>
-      <ZoneLabel tone="text-navy">SBA approvals</ZoneLabel>
-      <p className="mt-2.5 text-[38px] font-bold leading-none tracking-[-0.03em] text-navy tabular-nums">
-        {approvals.ytd}
-        {approvals.goal && (
-          <span className="text-[22px] font-semibold text-muted">/{approvals.goal}</span>
-        )}
-      </p>
-      <p className="mt-1.5 text-[13px] text-muted">
-        {approvals.amount > 0 ? `${formatCurrency(approvals.amount)} approved` : "none yet this year"}
-      </p>
-      <div className="mt-auto pt-4">
-        {approvals.goal ? (
-          <>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-navy/10">
-              <div
-                className="h-full rounded-full bg-teal transition-[width] duration-500"
-                style={{ width: `${approvalPct}%` }}
-              />
-            </div>
-            <p className="mt-2 text-[11.5px] font-semibold text-navy/75">
-              {Math.max(0, approvals.goal - approvals.ytd)} to go
-            </p>
-          </>
-        ) : (
-          <p className="text-[12px] leading-relaxed text-muted">
-            Set an annual goal to track pace.
-          </p>
-        )}
-      </div>
-    </>,
-  ];
-
-  const hrefs = [
-    "/lenders?view=needs_contact",
-    "/follow-ups",
-    "/lenders?view=upcoming_meetings",
-    "/lenders?view=active_loans",
-  ];
-
   return (
-    <section className="mb-5">
-      <div className="relative overflow-hidden rounded-[20px] border border-border bg-[linear-gradient(168deg,#eff3fb_0%,#f8fafd_46%,#fdfdff_100%)] shadow-[var(--shadow-card),var(--shadow-inset)]">
+    <section>
+      <div className="relative overflow-hidden rounded-[20px] border border-border/70 bg-[linear-gradient(168deg,#eef2fa_0%,#f8fafd_46%,#fdfdff_100%)] shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
         <ContourTexture />
-        {/* Warm sunrise glow, carried down from the hero */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(680px 260px at 88% -12%, rgba(200,141,32,0.13) 0%, rgba(200,141,32,0.05) 42%, rgba(200,141,32,0) 72%)",
+              "radial-gradient(700px 280px at 88% -14%, rgba(200,141,32,0.13) 0%, rgba(200,141,32,0.05) 42%, rgba(200,141,32,0) 72%)",
           }}
         />
 
@@ -262,21 +158,257 @@ export function RelationshipMomentum({ coverage, loans, meetings, approvals }: M
           </div>
 
           <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-            {zones.map((zone, i) => (
-              <Link
-                key={hrefs[i]}
-                href={hrefs[i]}
-                className={cn(
-                  "group flex min-h-[168px] flex-col p-5 transition-colors sm:p-6 hover:bg-white/70",
-                  ZONE_BORDERS[i],
-                )}
-              >
-                {zone}
+            {/* ---- A. Personal coverage ---- */}
+            <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[0])}>
+              <ZoneHead icon={HeartHandshake} tone="blue" label="Personal coverage" />
+              <Link href="/lenders?view=needs_contact" className="group mt-3 block">
+                <p className="text-[38px] font-bold leading-none tracking-[-0.03em] text-primary tabular-nums group-hover:text-primary-hover">
+                  {coverage.pct}
+                  <span className="text-[22px] font-semibold">%</span>
+                </p>
+                <p className="mt-1.5 text-[13px] text-muted">
+                  <span className="font-semibold text-foreground">
+                    {coverage.covered} of {coverage.active}
+                  </span>{" "}
+                  lenders
+                </p>
               </Link>
-            ))}
+
+              <div className="mt-auto pt-4">
+                {coverage.trend.length >= 2 ? (
+                  <>
+                    <Sparkline
+                      values={coverage.trend}
+                      className="h-10 w-full"
+                      label="Personal coverage across the last eight weeks"
+                    />
+                    {coverage.change30 !== null && (
+                      <div className="mt-1">
+                        <TrendLabel change={coverage.change30} />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* No history yet — show the roster itself rather than an empty chart. */
+                  <>
+                    <div className="flex flex-wrap gap-[5px]" role="img" aria-label={dotSummary(coverage.dots)}>
+                      {coverage.dots.map((state, i) => (
+                        <span
+                          key={i}
+                          title={DOT_LABEL[state]}
+                          className={cn("h-[9px] w-[9px] rounded-full", DOT_STYLE[state])}
+                        />
+                      ))}
+                    </div>
+                    <ul className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
+                      {(["personal", "campaign", "uncovered"] as CoverageSplitKey[]).map((k) => (
+                        <li key={k} className="inline-flex items-center gap-1.5 text-[10.5px] text-muted">
+                          <span className={cn("h-2 w-2 rounded-full", DOT_STYLE[k])} />
+                          {DOT_LABEL[k]}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ---- B. Weekly loan communication ---- */}
+            <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[1])}>
+              <ZoneHead
+                icon={MessageSquareDot}
+                tone={overdueLoans > 0 ? "red" : loans.dueNow > 0 ? "gold" : "teal"}
+                label="Loan communication"
+              />
+              <p className={cn("mt-3 text-[38px] font-bold leading-none tracking-[-0.03em] tabular-nums", loanTone)}>
+                {loans.statuses.length === 0 ? "—" : updatedLoans}
+                {loans.statuses.length > 0 && (
+                  <span className="text-[22px] font-semibold text-muted">
+                    {" "}
+                    of {loans.statuses.length}
+                  </span>
+                )}
+              </p>
+              <p className="mt-1.5 text-[13px] text-muted">
+                {loans.statuses.length === 0 ? "No active loans" : "updated this week"}
+              </p>
+
+              <div className="mt-auto pt-4">
+                {loans.statuses.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {loans.statuses.slice(0, 8).map((loan) => (
+                      <span
+                        key={loan.id}
+                        title={`${loan.borrower} — ${
+                          loan.state === "updated"
+                            ? "updated"
+                            : loan.state === "overdue"
+                              ? `overdue by ${loan.daysLate} days`
+                              : "update due"
+                        }`}
+                        className={cn(
+                          "h-2.5 min-w-[28px] flex-1 rounded-full",
+                          loan.state === "updated"
+                            ? "bg-teal"
+                            : loan.state === "overdue"
+                              ? "bg-danger"
+                              : "bg-gold",
+                        )}
+                      />
+                    ))}
+                  </div>
+                )}
+                {loans.dueNow > 0 ? (
+                  <Link
+                    href="/follow-ups"
+                    className="mt-2.5 inline-flex h-11 items-center gap-1.5 rounded-[10px] bg-gold px-3.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#b47d16] sm:h-8 sm:px-3"
+                  >
+                    Draft {loans.dueNow} update{loans.dueNow === 1 ? "" : "s"}
+                  </Link>
+                ) : (
+                  <p className="mt-2.5 text-[11.5px] font-semibold text-teal">
+                    {loans.statuses.length === 0 ? "Nothing to chase" : "All current"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ---- C. Meetings ---- */}
+            <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[2])}>
+              <ZoneHead icon={CalendarDays} tone="teal" label="Meetings" />
+              <p className="mt-3 text-[38px] font-bold leading-none tracking-[-0.03em] text-teal tabular-nums">
+                {meetings.upcoming}
+              </p>
+              <p className="mt-1.5 text-[13px] text-muted">confirmed ahead</p>
+
+              <div className="mt-auto pt-4">
+                {meetings.next ? (
+                  <Link
+                    href="/lenders?view=upcoming_meetings"
+                    className="flex items-center gap-3 rounded-xl border border-border p-2 transition-colors hover:border-teal-border hover:bg-teal-soft/50"
+                  >
+                    <DateTile date={meetings.next.startAt} tone="teal" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12.5px] font-semibold text-foreground">
+                        {MEETING_TYPE_LABELS[meetings.next.type] ?? meetings.next.type}
+                        {meetings.next.withWhom ? ` · ${meetings.next.withWhom}` : ""}
+                      </span>
+                      <span className="mt-0.5 block text-[11.5px] text-muted">
+                        {meetings.next.startAt
+                          ? new Date(meetings.next.startAt).toLocaleString("en-US", {
+                              weekday: "short",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                          : "Time not set"}
+                      </span>
+                    </span>
+                  </Link>
+                ) : (
+                  <p className="text-[12px] leading-relaxed text-muted">
+                    Nothing booked. Scheduling one covers that lender immediately.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* ---- D. Annual SBA approvals ---- */}
+            <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[3])}>
+              <ZoneHead icon={BadgeCheck} tone="slate" label="SBA approvals" />
+              <p className="mt-3 text-[38px] font-bold leading-none tracking-[-0.03em] text-navy tabular-nums">
+                {approvals.ytd}
+                {approvals.goal && (
+                  <span className="text-[22px] font-semibold text-muted"> of {approvals.goal}</span>
+                )}
+              </p>
+              <p className="mt-1.5 text-[13px] text-muted">
+                {approvals.amount > 0
+                  ? `${formatCurrency(approvals.amount)} approved`
+                  : "none yet this year"}
+              </p>
+
+              <div className="mt-auto pt-4">
+                {approvals.goal ? (
+                  <>
+                    <div className="relative h-1.5 w-full rounded-full bg-navy/10">
+                      <div
+                        className="h-full rounded-full bg-[linear-gradient(90deg,#3157d5_0%,#5b7ce6_100%)] transition-[width] duration-500"
+                        style={{ width: `${approvalPct}%` }}
+                      />
+                      {/* Gold marker at the halfway milestone */}
+                      <span
+                        aria-hidden="true"
+                        title="Halfway to goal"
+                        className="absolute top-1/2 h-3 w-[2px] -translate-y-1/2 rounded-full bg-gold"
+                        style={{ left: "50%" }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[11.5px] font-semibold text-navy/75">
+                      {Math.max(0, approvals.goal - approvals.ytd)} to go
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[12px] leading-relaxed text-muted">
+                    Set an annual goal to track pace.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* ---- Full-width coverage split ---- */}
+          {total > 0 && (
+            <div className="border-t border-border/70 px-5 py-4 sm:px-6">
+              <div className="flex h-3.5 w-full overflow-hidden rounded-full bg-black/[0.04]">
+                {split
+                  .filter((s) => s.count > 0)
+                  .map((s) => (
+                    <Link
+                      key={s.key}
+                      href={s.href}
+                      title={`${s.label}: ${s.count} — ${s.hint}`}
+                      className="h-full transition-opacity first:rounded-l-full last:rounded-r-full hover:opacity-80"
+                      style={{
+                        width: `${(s.count / total) * 100}%`,
+                        backgroundColor: s.color,
+                        minWidth: 8,
+                      }}
+                    >
+                      <span className="sr-only">
+                        {s.label}: {s.count} lenders
+                      </span>
+                    </Link>
+                  ))}
+              </div>
+              <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5">
+                {split.map((s) => (
+                  <li key={s.key}>
+                    <Link
+                      href={s.href}
+                      className="-mx-1 inline-flex min-h-[40px] items-center gap-1.5 px-1 text-[12.5px] text-muted transition-colors hover:text-foreground sm:min-h-0"
+                    >
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      {s.label}
+                      <span className="font-semibold text-foreground tabular-nums">{s.count}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </section>
   );
+}
+
+function dotSummary(dots: CoverageSplitKey[]): string {
+  const counts = dots.reduce<Record<string, number>>((acc, d) => {
+    acc[d] = (acc[d] ?? 0) + 1;
+    return acc;
+  }, {});
+  return `${counts.personal ?? 0} with a personal touch, ${counts.campaign ?? 0} campaign only, ${counts.uncovered ?? 0} uncovered`;
 }

@@ -150,87 +150,74 @@ export async function getCoverageHistory(): Promise<CoverageHistory> {
   };
 }
 
-export type StatusSegmentKey =
-  | "on_track"
-  | "grace"
-  | "overdue"
-  | "meeting_scheduled"
-  | "campaign_only";
+export type CoverageSplitKey = "personal" | "campaign" | "uncovered";
 
-export interface StatusSegment {
-  key: StatusSegmentKey;
+export interface CoverageSplitSegment {
+  key: CoverageSplitKey;
   label: string;
   count: number;
   href: string;
-  /** Fill color — royal-blue family plus restrained status hues. */
   color: string;
   hint: string;
 }
 
-/**
- * Bucket every active lender into exactly one relationship status, worst-case
- * last so the segments always sum to the active total.
- */
-export function buildStatusSegments(lenders: LenderWithCoverage[]): StatusSegment[] {
-  const active = lenders.filter((l) => l.active);
-
-  let onTrack = 0;
-  let grace = 0;
-  let overdue = 0;
-  let meeting = 0;
-  let campaignOnly = 0;
-
-  for (const l of active) {
-    const { personal, visible, hasConfirmedFutureMeeting } = l.coverage;
-    if (hasConfirmedFutureMeeting) meeting++;
-    else if (personal === "on_track") onTrack++;
-    else if (personal === "grace") grace++;
-    else if (visible === "on_track") campaignOnly++;
-    else overdue++;
+/** Which of the three coverage states a lender is in right now. */
+export function coverageStateOf(lender: LenderWithCoverage): CoverageSplitKey {
+  const { personal, visible, hasConfirmedFutureMeeting } = lender.coverage;
+  if (hasConfirmedFutureMeeting || personal === "on_track" || personal === "grace") {
+    return "personal";
   }
+  return visible === "on_track" ? "campaign" : "uncovered";
+}
+
+/**
+ * Personal / campaign-only / uncovered, mutually exclusive so the bar always
+ * sums to the active lender count.
+ */
+export function buildCoverageSplit(lenders: LenderWithCoverage[]): CoverageSplitSegment[] {
+  const active = lenders.filter((l) => l.active);
+  const tally = { personal: 0, campaign: 0, uncovered: 0 };
+  for (const l of active) tally[coverageStateOf(l)]++;
 
   return [
     {
-      key: "on_track",
-      label: "On track",
-      count: onTrack,
+      key: "personal",
+      label: "Personal",
+      count: tally.personal,
       href: "/lenders?view=on_track",
       color: "#3157d5",
-      hint: "Personal contact inside the goal window",
+      hint: "One-to-one contact inside the goal window",
     },
     {
-      key: "meeting_scheduled",
-      label: "Meeting scheduled",
-      count: meeting,
-      href: "/lenders?view=upcoming_meetings",
-      color: "#8ba4ea",
-      hint: "Confirmed meeting on the calendar",
-    },
-    {
-      key: "grace",
-      label: "Grace period",
-      count: grace,
-      href: "/needs-attention?f=grace",
-      color: "#d8a84e",
-      hint: "Just past the goal — still recoverable",
-    },
-    {
-      key: "campaign_only",
+      key: "campaign",
       label: "Campaign only",
-      count: campaignOnly,
+      count: tally.campaign,
       href: "/needs-attention?f=campaign_only",
-      color: "#8b96ac",
-      hint: "Reached by campaign email, but no personal touch",
+      color: "#c88d20",
+      hint: "Reached by campaign email, never personally",
     },
     {
-      key: "overdue",
-      label: "Overdue",
-      count: overdue,
+      key: "uncovered",
+      label: "Uncovered",
+      count: tally.uncovered,
       href: "/needs-attention",
-      color: "#b3372f",
-      hint: "Overdue, seriously overdue, or never contacted",
+      color: "#c9cfdd",
+      hint: "No contact of any kind inside the window",
     },
   ];
+}
+
+/** One dot per lender for the no-history fallback in the coverage zone. */
+export function buildLenderDots(
+  lenders: LenderWithCoverage[],
+  limit = 24,
+): CoverageSplitKey[] {
+  const rank = { personal: 0, campaign: 1, uncovered: 2 } as const;
+  return lenders
+    .filter((l) => l.active)
+    .map(coverageStateOf)
+    .sort((a, b) => rank[a] - rank[b])
+    .slice(0, limit);
 }
 
 export interface UpcomingData {
@@ -247,10 +234,13 @@ export interface UpcomingData {
   tentative: {
     id: string;
     title: string;
+    lenderName: string | null;
     start_at: string | null;
     status: string;
     kind: "meeting" | "trip_target";
     detail: string | null;
+    /** Days since the invitation went out, when we can tell. */
+    waitingDays: number | null;
   }[];
   trip: {
     id: string;
@@ -284,7 +274,9 @@ export async function getUpcoming(): Promise<UpcomingData> {
         .limit(5),
       supabase
         .from("meetings")
-        .select("id, title, start_at, status, location_name")
+        .select(
+          "id, title, start_at, status, location_name, created_at, attendees:meeting_attendees(lender:lenders(full_name))",
+        )
         .in("status", ["proposed", "tentative"])
         .is("deleted_at", null)
         .order("start_at", { nullsFirst: false })
@@ -307,24 +299,38 @@ export async function getUpcoming(): Promise<UpcomingData> {
   const targetsForTrip = (tripTargets ?? []).filter((t) => trip && t.trip_id === trip.id);
 
   const tentative: UpcomingData["tentative"] = [
-    ...(tentativeMeetings ?? []).map((m) => ({
-      id: m.id,
-      title: m.title,
-      start_at: m.start_at,
-      status: m.status,
-      kind: "meeting" as const,
-      detail: m.location_name,
-    })),
+    ...(tentativeMeetings ?? []).map((m) => {
+      const names = ((m.attendees ?? []) as unknown as { lender: { full_name: string } | null }[])
+        .map((a) => a.lender?.full_name)
+        .filter((n): n is string => Boolean(n));
+      return {
+        id: m.id,
+        title: names[0] ?? m.title,
+        lenderName: names[0] ?? null,
+        start_at: m.start_at,
+        status: m.status,
+        kind: "meeting" as const,
+        detail: m.location_name,
+        waitingDays: m.created_at
+          ? Math.max(0, Math.floor((Date.now() - new Date(m.created_at).getTime()) / 86_400_000))
+          : null,
+      };
+    }),
     ...targetsForTrip
       .filter((t) => ["invited", "awaiting_reply", "tentative"].includes(t.status))
-      .map((t) => ({
-        id: t.id,
-        title: (t.lender as unknown as { full_name: string } | null)?.full_name ?? "Trip target",
-        start_at: null,
-        status: t.status,
-        kind: "trip_target" as const,
-        detail: t.target_type.replace(/_/g, " "),
-      })),
+      .map((t) => {
+        const name = (t.lender as unknown as { full_name: string } | null)?.full_name ?? null;
+        return {
+          id: t.id,
+          title: name ?? "Trip target",
+          lenderName: name,
+          start_at: null,
+          status: t.status,
+          kind: "trip_target" as const,
+          detail: t.target_type.replace(/_/g, " "),
+          waitingDays: null,
+        };
+      }),
   ].slice(0, 6);
 
   return {
@@ -353,40 +359,96 @@ export async function getUpcoming(): Promise<UpcomingData> {
   };
 }
 
-export interface LoanCommunication {
-  activeLoans: number;
-  updatedThisWeek: number;
-  dueNow: number;
+export type LoanUpdateState = "updated" | "due" | "overdue";
+
+export interface LoanStatus {
+  id: string;
+  borrower: string;
+  lenderName: string | null;
+  state: LoanUpdateState;
+  daysLate: number;
 }
 
-/** Weekly loan-communication KPI: every active loan gets a touch each week (§26). */
-export async function getLoanCommunication(): Promise<LoanCommunication> {
+/** One status block per active loan, so the zone can be counted at a glance. */
+export async function getLoanStatuses(): Promise<LoanStatus[]> {
+  const supabase = await createClient();
+  const today = startOfDay(new Date()).getTime();
+
+  const { data } = await supabase
+    .from("active_loans")
+    .select("id, borrower_name, next_update_due_at, lender:lenders(full_name)")
+    .eq("updates_active", true)
+    .is("deleted_at", null)
+    .order("next_update_due_at", { nullsFirst: false });
+
+  return (data ?? []).map((loan) => {
+    const due = loan.next_update_due_at ? new Date(loan.next_update_due_at).getTime() : null;
+    const daysLate = due === null ? 0 : Math.floor((today - due) / 86_400_000);
+    const state: LoanUpdateState = daysLate < 0 ? "updated" : daysLate > 7 ? "overdue" : "due";
+    return {
+      id: loan.id,
+      borrower: loan.borrower_name,
+      lenderName: (loan.lender as unknown as { full_name: string } | null)?.full_name ?? null,
+      state,
+      daysLate: Math.max(0, daysLate),
+    };
+  });
+}
+
+export interface RelationshipContext {
+  /** Lenders who referred a loan currently in process. */
+  activeLoanLenders: Set<string>;
+  /** Lenders with an open promise or task. */
+  openFollowUpLenders: Set<string>;
+  /** Lenders with a saved personal note to open a conversation with. */
+  personalTopicLenders: Set<string>;
+  /** Lenders who reached out to you in the last 30 days. */
+  recentInboundLenders: Set<string>;
+  /** Territory of the next trip, for the "near upcoming trip" chip. */
+  tripTerritory: string | null;
+}
+
+/** Signals behind the reason chips on each lender row. */
+export async function getRelationshipContext(): Promise<RelationshipContext> {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000).toISOString();
 
-  const { data: loans } = await supabase
-    .from("active_loans")
-    .select("id, last_update_sent_at, next_update_due_at, updates_active")
-    .eq("updates_active", true)
-    .is("deleted_at", null);
+  const [loans, promises, tasks, details, inbound, trips] = await Promise.all([
+    supabase.from("active_loans").select("lender_id").eq("updates_active", true).is("deleted_at", null),
+    supabase.from("promises").select("lender_id").eq("status", "open").is("deleted_at", null),
+    supabase.from("tasks").select("lender_id").eq("status", "open").is("deleted_at", null),
+    supabase
+      .from("lender_personal_details")
+      .select("lender_id")
+      .eq("is_active_suggestion", true)
+      .is("deleted_at", null),
+    supabase
+      .from("activities")
+      .select("lender_id")
+      .eq("initiated_by_lender", true)
+      .gte("occurred_at", thirtyDaysAgo)
+      .is("deleted_at", null),
+    supabase
+      .from("trips")
+      .select("territory")
+      .in("status", ["planning", "scheduled", "in_progress"])
+      .or(`end_date.gte.${today},end_date.is.null`)
+      .is("deleted_at", null)
+      .order("start_date", { nullsFirst: false })
+      .limit(1),
+  ]);
 
-  const list = loans ?? [];
+  const ids = (rows: { lender_id: string | null }[] | null) =>
+    new Set((rows ?? []).map((r) => r.lender_id).filter((id): id is string => Boolean(id)));
+
   return {
-    activeLoans: list.length,
-    updatedThisWeek: list.filter(
-      (l) => l.last_update_sent_at && l.last_update_sent_at >= weekAgo,
-    ).length,
-    dueNow: list.filter((l) => l.next_update_due_at && l.next_update_due_at <= today).length,
+    activeLoanLenders: ids(loans.data),
+    openFollowUpLenders: new Set([...ids(promises.data), ...ids(tasks.data)]),
+    personalTopicLenders: ids(details.data),
+    recentInboundLenders: ids(inbound.data),
+    tripTerritory: (trips.data ?? [])[0]?.territory ?? null,
   };
-}
-
-/** Days since a personal touch, phrased for a lender row. */
-export function personalContactPhrase(days: number | null): string {
-  if (days === null) return "No personal contact yet";
-  if (days === 0) return "Personal contact today";
-  if (days === 1) return "1 day since personal contact";
-  return `${days} days since personal contact`;
 }
 
 export { daysSince };

@@ -81,7 +81,7 @@ export function HeroHeader({
 
   return (
     <section className="mb-5">
-      <div className="relative overflow-hidden rounded-[22px] bg-navy shadow-[var(--shadow-hero)]">
+      <div className="relative overflow-hidden rounded-[24px] bg-navy shadow-[var(--shadow-hero)]">
         {/* The photograph. Served through next/image so the 2172px original is
             re-encoded and resized per device instead of shipping ~1.7MB to every
             visitor. Cover-cropped with the peak and sun held toward the right. */}
@@ -118,7 +118,7 @@ export function HeroHeader({
         <div className="relative flex min-h-[230px] flex-col gap-5 p-5 sm:gap-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
           {/* Zone 1 + 2 — greeting, summary, actions, status chips */}
           <div className="min-w-0 flex-1">
-            <h1 className="text-[27px] font-bold leading-tight text-white sm:text-[32px]">
+            <h1 className="text-[30px] font-bold leading-[1.08] tracking-[-0.025em] text-white sm:text-[38px] lg:text-[40px]">
               {greeting}
               {firstName ? `, ${firstName}` : ""}
             </h1>

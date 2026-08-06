@@ -118,3 +118,36 @@ h3 {
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+
+/* Focus is always visible, and never only a color change. */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Restrained motion: a row settling in, a value ticking over. Nothing pulses. */
+@keyframes row-settle {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-row-settle {
+  animation: row-settle 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

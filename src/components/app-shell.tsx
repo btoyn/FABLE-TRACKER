@@ -16,8 +16,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { NavCounts } from "@/lib/data";
 
-/** Import lives in Settings now, not primary navigation (§8). */
-const NAV = [
+/** Import lives in Settings, not primary navigation. */
+const PRIMARY_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, count: null },
   { href: "/lenders", label: "Lenders", icon: Users, count: null },
   { href: "/institutions", label: "Institutions", icon: Landmark, count: null },
@@ -25,13 +25,13 @@ const NAV = [
   { href: "/needs-attention", label: "Needs Attention", icon: AlertCircle, count: "needsAttention" },
 ] as const;
 
-const FOOTER_NAV = [
+const UTILITY_NAV = [
   { href: "/guide", label: "Guide", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/trash", label: "Trash", icon: Trash2 },
 ];
 
-// Mobile priorities (spec §5): search lender, today's priorities, follow-ups, add
+// Mobile priorities: today, search a lender, add, follow-ups, settings
 const MOBILE_NAV = [
   { href: "/dashboard", label: "Today", icon: LayoutDashboard },
   { href: "/lenders", label: "Lenders", icon: Users },
@@ -40,36 +40,46 @@ const MOBILE_NAV = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+/** Badge tone carries urgency, not just a count. */
+function badgeTone(kind: "followUps" | "needsAttention", count: number, active: boolean): string {
+  if (active) return "bg-white/25 text-white";
+  if (kind === "needsAttention") return "bg-danger-soft text-[#a8434a]";
+  return count > 5 ? "bg-gold-soft text-[#8a6215]" : "bg-primary-soft text-[#2a49b4]";
+}
+
 function NavLink({
   href,
   label,
   icon: Icon,
   active,
   count,
+  countKind,
 }: {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   count?: number;
+  countKind?: "followUps" | "needsAttention";
 }) {
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+        "group flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13.5px] font-medium transition-all duration-150",
         active
-          ? "bg-primary text-white shadow-[0_2px_8px_rgba(49,87,213,0.28)]"
-          : "text-foreground/75 hover:bg-white hover:text-foreground hover:shadow-[0_1px_2px_rgba(24,35,56,0.05)]",
+          ? "bg-primary text-white shadow-[0_2px_8px_rgba(49,87,213,0.3)]"
+          : "text-[#2c3852] hover:bg-primary-soft hover:text-primary",
       )}
     >
       <Icon className="h-[17px] w-[17px] shrink-0" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {count !== undefined && count > 0 && (
+      {count !== undefined && count > 0 && countKind && (
         <span
           className={cn(
-            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-            active ? "bg-white/25 text-white" : "bg-primary-soft text-primary",
+            "shrink-0 rounded-full px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums",
+            badgeTone(countKind, count, active),
           )}
         >
           {count > 99 ? "99+" : count}
@@ -94,16 +104,17 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen w-full">
-      {/* Desktop sidebar — 240px, subtle blue-gray, neutral branding */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 md:flex">
-        <Link href="/dashboard" className="mb-6 flex items-center gap-2.5 px-1.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[13px] font-bold text-white shadow-[0_2px_6px_rgba(49,87,213,0.3)]">
+      {/* Light sidebar, primary navigation grouped away from utilities */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 md:flex">
+        <Link href="/dashboard" className="mb-5 flex items-center gap-2.5 px-1.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[13px] font-bold text-white shadow-[0_2px_6px_rgba(49,87,213,0.32)]">
             LC
           </span>
           <span className="text-[15px] font-semibold tracking-[-0.01em]">Lender CRM</span>
         </Link>
-        <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map((item) => (
+
+        <nav className="flex flex-col gap-0.5" aria-label="Main">
+          {PRIMARY_NAV.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
@@ -111,44 +122,52 @@ export function AppShell({
               icon={item.icon}
               active={isActive(item.href)}
               count={item.count ? counts?.[item.count] : undefined}
+              countKind={item.count ?? undefined}
             />
           ))}
         </nav>
-        <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
-          {FOOTER_NAV.map((item) => (
+
+        <div className="mt-auto flex flex-col gap-0.5 border-t border-sidebar-border pt-3">
+          {UTILITY_NAV.map((item) => (
             <NavLink key={item.href} {...item} active={isActive(item.href)} />
           ))}
           {userEmail && (
-            <p className="truncate px-3 pt-2.5 text-xs text-muted" title={userEmail}>
+            <p className="truncate px-3 pb-1 pt-2 text-[11.5px] text-muted" title={userEmail}>
               {userEmail}
             </p>
           )}
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="min-w-0 flex-1 pb-20 md:pb-0">
-        <div className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8">{children}</div>
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8">{children}</div>
       </main>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        {MOBILE_NAV.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors active:bg-black/5",
-              isActive(href) && href !== "/lenders/new" ? "text-primary" : "text-muted",
-            )}
-          >
-            <Icon className="h-5 w-5" />
-            {label}
-            {href === "/follow-ups" && (counts?.followUps ?? 0) > 0 && (
-              <span className="absolute right-[22%] top-1 h-1.5 w-1.5 rounded-full bg-primary" />
-            )}
-          </Link>
-        ))}
+      {/* Mobile bottom nav — 44px+ touch targets */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+        aria-label="Main"
+      >
+        {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
+          const active = isActive(href) && href !== "/lenders/new";
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:bg-primary-soft",
+                active ? "text-primary" : "text-muted",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+              {href === "/follow-ups" && (counts?.followUps ?? 0) > 0 && (
+                <span className="absolute right-[22%] top-2 h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
