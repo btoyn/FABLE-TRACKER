@@ -48,7 +48,6 @@ export default async function DashboardPage() {
   const now = new Date();
   const nowMs = now.getTime();
   const today = now.toISOString().slice(0, 10);
-  const year = now.getFullYear();
   const weekStart = weekStartOf(now);
 
   const [
@@ -56,8 +55,6 @@ export default async function DashboardPage() {
     { data: profile },
     { data: missingNotes },
     { data: overduePromises },
-    { data: approvals },
-    { data: goal },
     { data: plan },
     upcoming,
     history,
@@ -79,13 +76,6 @@ export default async function DashboardPage() {
       .lt("due_at", today)
       .is("deleted_at", null)
       .order("due_at"),
-    supabase
-      .from("active_loans")
-      .select("approved_sba_amount")
-      .eq("stage", "sba_approved")
-      .gte("sba_approval_date", `${year}-01-01`)
-      .is("deleted_at", null),
-    supabase.from("annual_goals").select("approval_goal").eq("year", year).maybeSingle(),
     supabase
       .from("weekly_relationship_plans")
       .select("id")
@@ -257,11 +247,6 @@ export default async function DashboardPage() {
           noteCount > 0 ? `, including ${plural(noteCount, "meeting note")} to capture` : ""
         }.`;
 
-  const approvalsYtd = (approvals ?? []).length;
-  const approvedAmount = (approvals ?? []).reduce(
-    (sum, a) => sum + Number(a.approved_sba_amount ?? 0),
-    0,
-  );
   const nextMeeting = upcoming.meetings[0];
 
   return (
@@ -303,11 +288,6 @@ export default async function DashboardPage() {
                   }
                 : null,
               awaitingNotes: noteCount,
-            }}
-            approvals={{
-              ytd: approvalsYtd,
-              goal: goal?.approval_goal ?? null,
-              amount: approvedAmount,
             }}
             split={split}
           />

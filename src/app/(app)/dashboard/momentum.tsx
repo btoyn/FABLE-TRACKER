@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowDownRight,
   ArrowUpRight,
-  BadgeCheck,
   CalendarDays,
   HeartHandshake,
   Minus,
@@ -11,13 +10,16 @@ import {
 import { Sparkline } from "@/components/charts/sparkline";
 import { DateTile, IconCircle, type IconCircleTone } from "@/components/ui/icon-circle";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { CoverageSplitKey, CoverageSplitSegment, LoanStatus } from "@/lib/dashboard";
 
 /**
- * Relationship Momentum — one composed surface, four zones, then a full-width
+ * Relationship Momentum — one composed surface, three zones, then a full-width
  * coverage bar. Colour carries meaning: blue for relationship activity, gold for
- * pending work, teal for confirmed and healthy, navy for the annual goal.
+ * pending work, teal for confirmed and healthy.
+ *
+ * Approval volume and dollars are deliberately absent: this app tracks lenders,
+ * not loans, and production numbers live in the separate system Brandon uses.
  */
 
 export interface MomentumProps {
@@ -36,7 +38,6 @@ export interface MomentumProps {
     next: { title: string; startAt: string | null; type: string; withWhom: string | null } | null;
     awaitingNotes: number;
   };
-  approvals: { ytd: number; goal: number | null; amount: number };
   split: CoverageSplitSegment[];
 }
 
@@ -113,30 +114,21 @@ function TrendLabel({ change }: { change: number }) {
   );
 }
 
+// Three zones into a 1/2/3-column grid: at the two-column width the third zone
+// would leave a hole beside it, so it spans the full row instead.
 const ZONE_BORDERS = [
   "",
   "border-t border-border/70 sm:border-t-0 sm:border-l",
-  "border-t border-border/70 xl:border-t-0 xl:border-l",
-  "border-t border-border/70 sm:border-l xl:border-t-0",
+  "border-t border-border/70 sm:col-span-2 xl:col-span-1 xl:border-t-0 xl:border-l",
 ];
 
-export function RelationshipMomentum({
-  coverage,
-  loans,
-  meetings,
-  approvals,
-  split,
-}: MomentumProps) {
+export function RelationshipMomentum({ coverage, loans, meetings, split }: MomentumProps) {
   const total = split.reduce((sum, s) => sum + s.count, 0);
   const updatedLoans = loans.statuses.filter((l) => l.state === "updated").length;
   const overdueLoans = loans.statuses.filter((l) => l.state === "overdue").length;
   // The headline counts completed touches, so it stays navy; urgency lives in
   // the per-loan blocks, the icon tint and the action button.
   const loanTone = loans.statuses.length === 0 ? "text-muted" : "text-navy";
-  const approvalPct =
-    approvals.goal && approvals.goal > 0
-      ? Math.min(100, (approvals.ytd / approvals.goal) * 100)
-      : 0;
 
   return (
     <section>
@@ -157,7 +149,7 @@ export function RelationshipMomentum({
             <span className="text-[11.5px] text-muted">rolling 30-day goal</span>
           </div>
 
-          <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
             {/* ---- A. Personal coverage ---- */}
             <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[0])}>
               <ZoneHead icon={HeartHandshake} tone="blue" label="Personal coverage" />
@@ -312,48 +304,6 @@ export function RelationshipMomentum({
               </div>
             </div>
 
-            {/* ---- D. Annual SBA approvals ---- */}
-            <div className={cn("flex min-h-[186px] flex-col p-5 sm:p-6", ZONE_BORDERS[3])}>
-              <ZoneHead icon={BadgeCheck} tone="slate" label="SBA approvals" />
-              <p className="mt-3 text-[38px] font-bold leading-none tracking-[-0.03em] text-navy tabular-nums">
-                {approvals.ytd}
-                {approvals.goal && (
-                  <span className="text-[22px] font-semibold text-muted"> of {approvals.goal}</span>
-                )}
-              </p>
-              <p className="mt-1.5 text-[13px] text-muted">
-                {approvals.amount > 0
-                  ? `${formatCurrency(approvals.amount)} approved`
-                  : "none yet this year"}
-              </p>
-
-              <div className="mt-auto pt-4">
-                {approvals.goal ? (
-                  <>
-                    <div className="relative h-1.5 w-full rounded-full bg-navy/10">
-                      <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,#3157d5_0%,#5b7ce6_100%)] transition-[width] duration-500"
-                        style={{ width: `${approvalPct}%` }}
-                      />
-                      {/* Gold marker at the halfway milestone */}
-                      <span
-                        aria-hidden="true"
-                        title="Halfway to goal"
-                        className="absolute top-1/2 h-3 w-[2px] -translate-y-1/2 rounded-full bg-gold"
-                        style={{ left: "50%" }}
-                      />
-                    </div>
-                    <p className="mt-2 text-[11.5px] font-semibold text-navy/75">
-                      {Math.max(0, approvals.goal - approvals.ytd)} to go
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-[12px] leading-relaxed text-muted">
-                    Set an annual goal to track pace.
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* ---- Full-width coverage split ---- */}

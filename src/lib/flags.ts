@@ -17,6 +17,8 @@ export interface FeatureFlags {
   expenseImport: boolean;
   /** Outbound email (digest, reminders) via Resend. */
   outboundEmail: boolean;
+  /** Whether anyone with the URL may create an account. Closed by default. */
+  signupsOpen: boolean;
 }
 
 export function getFlags(): FeatureFlags {
@@ -28,5 +30,8 @@ export function getFlags(): FeatureFlags {
     contentIntelligence: process.env.CONTENT_INTELLIGENCE_ENABLED === "true",
     expenseImport: true, // CSV import has no external dependency
     outboundEmail: Boolean(process.env.RESEND_API_KEY),
+    // Private workspace: accounts are created deliberately, not by anyone
+    // who finds the URL. Set NEXT_PUBLIC_SIGNUPS_OPEN=true to reopen.
+    signupsOpen: process.env.NEXT_PUBLIC_SIGNUPS_OPEN === "true",
   };
 }

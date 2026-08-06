@@ -49,14 +49,16 @@ The dashboard is ordered by urgency. Read down.
 3. **The right rail** — confirmed meetings, whether each brief is prepared, your next trip, and
    anything **waiting on a reply** so tentative invitations don't quietly die.
 
-### The four cards — each links to the list behind it
+### The three cards — each links to the list behind it
 
 | Card | What it tells you |
 |---|---|
 | Personal coverage | Share of active lenders with a real one-to-one touch inside the window, plus the change since last week. The number to care about. |
-| Meetings | Confirmed meetings ahead, when the next is, how many await notes. |
 | Weekly loan communication | Reads as `3/5`. Every active loan gets a weekly touch *even when nothing changed* — silence is what makes referral partners nervous. |
-| Annual SBA approvals | Approvals year to date against goal, with dollars and the gap remaining. |
+| Meetings | Confirmed meetings ahead, when the next is, how many await notes. |
+
+Approval volume and dollars deliberately aren't here. This app tracks **lenders**, not loans — your
+production numbers live in the system you already use for them.
 
 Below those: an **eight-week coverage line**, rebuilt from your activity on every page load (so
 backdating a logged call redraws history honestly), and a **status bar** where every band and legend
@@ -181,7 +183,6 @@ So you don't hunt for a screen that isn't built.
 | Daily digest by email | Needs key | Resend. The summary shows in the app either way. |
 | Real Outlook drafts & calendar | Needs IT | Microsoft 365 registration and admin consent at IMBL |
 | Your writing voice | Not built | Storage ready; needs the screen to paste samples |
-| Annual goal | Not built | Read on the dashboard; no screen to set it |
 | Referral & deal tracking | Not built | Follow-up logic written and tested; no screen |
 | Active-loan management | Not built | Visible on the dashboard; can't add or edit loans |
 | Campaigns | Not built | Storage ready; no screen, no sending |

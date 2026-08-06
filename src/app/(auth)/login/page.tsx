@@ -5,9 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getFlags } from "@/lib/flags";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+
+/** Build-time public flag, so it is safe to read once at module scope. */
+const { signupsOpen } = getFlags();
 
 function LoginForm() {
   const router = useRouter();
@@ -77,9 +81,12 @@ function LoginForm() {
           <Link href="/reset-password" className="text-primary hover:underline">
             Forgot password?
           </Link>
-          <Link href="/signup" className="text-primary hover:underline">
-            Create account
-          </Link>
+          {/* Only offered when signups are open, so it is never a dead end. */}
+          {signupsOpen && (
+            <Link href="/signup" className="text-primary hover:underline">
+              Create account
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>
