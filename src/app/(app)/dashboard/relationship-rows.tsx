@@ -20,7 +20,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { logActivity } from "../activity-actions";
-import { replacePlanItem, scheduleTentativeMeeting } from "./actions";
+import { replacePlanItem, scheduleTentativeMeeting, startWeeklyOutreach } from "./actions";
 
 /** Why this lender surfaced, as a short chip rather than a sentence. */
 export interface ReasonChip {
@@ -93,6 +93,15 @@ export function RelationshipRows({
   const visible = rows.slice(0, VISIBLE);
   const pct = total === 0 ? 0 : (completed / total) * 100;
 
+  const router = useRouter();
+  const [starting, startOutreach] = useTransition();
+  function beginOutreach() {
+    startOutreach(async () => {
+      const result = await startWeeklyOutreach();
+      if (!result.error) router.refresh();
+    });
+  }
+
   return (
     <section id="this-week">
       <p className="eyebrow mb-2 text-navy/70">This week</p>
@@ -138,10 +147,17 @@ export function RelationshipRows({
               description={
                 hasPlan
                   ? "The list rebuilds at the start of next week."
-                  : "Press Start weekly outreach in the header and the plan builds itself from your coverage."
+                  : "Start weekly outreach and the plan builds itself from your coverage."
               }
               className="py-10"
             />
+            {!hasPlan && (
+              <div className="-mt-4 flex justify-center pb-4">
+                <Button onClick={beginOutreach} disabled={starting}>
+                  {starting ? "Working…" : "Start weekly outreach"}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <ul>

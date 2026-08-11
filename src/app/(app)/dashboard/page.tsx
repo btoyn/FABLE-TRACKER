@@ -1,19 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
-import { ensureSampleData, getLendersWithCoverage } from "@/lib/data";
+import { ensureSampleData, getLendersWithCoverage, getQuickLogLenders } from "@/lib/data";
 import {
-  buildCoverageSplit,
-  buildLenderDots,
-  getCoverageHistory,
   getLoanStatuses,
   getRelationshipContext,
   getUpcoming,
   weekStartOf,
 } from "@/lib/dashboard";
+import { getRelationshipHealth } from "@/lib/health";
 import { getFlags } from "@/lib/flags";
 import { formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
-import { HeroHeader, type HeroChip } from "./hero-header";
-import { RelationshipMomentum } from "./momentum";
+import { DashboardHeader } from "./dashboard-header";
+import { MetricCards } from "./metric-cards";
+import { RelationshipHealthWidget } from "./health-widget";
 import { TodayRibbon, type RibbonData } from "./today-ribbon";
 import {
   RelationshipRows,
@@ -23,6 +22,16 @@ import {
 } from "./relationship-rows";
 import { AgendaRail } from "./agenda-rail";
 import type { AvatarStatus } from "@/components/ui/avatar";
+
+/** Referral stages that count as "qualified" — past initial inquiry, and not
+ *  dormant / closed without handoff. */
+const QUALIFIED_OPPORTUNITY_STAGES = [
+  "sources_uses_sent",
+  "needs_list_sent",
+  "documents_pending",
+  "ready_for_preflight",
+  "handed_off",
+];
 
 export const metadata = { title: "Dashboard" };
 
@@ -50,6 +59,12 @@ export default async function DashboardPage() {
   const today = now.toISOString().slice(0, 10);
   const weekStart = weekStartOf(now);
 
+  // Current-calendar-month boundaries for the "this month" metrics.
+  const monthStartIso = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const nextMonthIso = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+  const monthStartDate = monthStartIso.slice(0, 10);
+  const nextMonthDate = nextMonthIso.slice(0, 10);
+
   const [
     lenders,
     { data: profile },
@@ -57,9 +72,13 @@ export default async function DashboardPage() {
     { data: overduePromises },
     { data: plan },
     upcoming,
-    history,
     loanStatuses,
     context,
+    quickLog,
+    health,
+    { count: meetingsThisMonth },
+    { count: referralsReceived },
+    { data: qualifiedOpps },
   ] = await Promise.all([
     getLendersWithCoverage(),
     supabase.from("users").select("display_name").maybeSingle(),
@@ -82,17 +101,45 @@ export default async function DashboardPage() {
       .eq("week_start", weekStart)
       .maybeSingle(),
     getUpcoming(),
-    getCoverageHistory(),
     getLoanStatuses(),
     getRelationshipContext(),
+    getQuickLogLenders(),
+    getRelationshipHealth(),
+    // Metric 3 — meetings whose start falls inside the current calendar month.
+    supabase
+      .from("meetings")
+      .select("id", { count: "exact", head: true })
+      .gte("start_at", monthStartIso)
+      .lt("start_at", nextMonthIso)
+      .is("deleted_at", null),
+    // Metric 4 — referral opportunities received this month.
+    supabase
+      .from("opportunities")
+      .select("id", { count: "exact", head: true })
+      .gte("received_at", monthStartDate)
+      .lt("received_at", nextMonthDate)
+      .is("deleted_at", null),
+    // Metric 5 — source lenders behind at least one qualified referral.
+    supabase
+      .from("opportunities")
+      .select("lender_id")
+      .in("stage", QUALIFIED_OPPORTUNITY_STAGES)
+      .not("lender_id", "is", null)
+      .is("deleted_at", null),
   ]);
 
   // ---- Coverage ------------------------------------------------------------
   const active = lenders.filter((l) => l.active);
+  // Metric 1 — active lenders currently within contact cadence.
   const personalCovered = active.filter((l) => l.coverage.personal === "on_track").length;
-  const coveragePct =
-    active.length === 0 ? 0 : Math.round((personalCovered / active.length) * 100);
-  const split = buildCoverageSplit(lenders);
+  // Metric 2 — active lenders past their next-contact date.
+  const needingAttention = active.filter((l) =>
+    ["overdue", "seriously_overdue", "never_contacted"].includes(l.coverage.personal),
+  ).length;
+  // Metric 5 — distinct source lenders across qualified referrals.
+  const partnersProducing = new Set(
+    (qualifiedOpps ?? []).map((o) => o.lender_id).filter((id): id is string => Boolean(id)),
+  ).size;
 
   // ---- This week's plan ----------------------------------------------------
   const planItemsResult = plan
@@ -220,23 +267,8 @@ export default async function DashboardPage() {
     })),
   };
 
-  // ---- Hero ----------------------------------------------------------------
+  // ---- Header summary ------------------------------------------------------
   const noteCount = (missingNotes ?? []).length;
-  const chips: HeroChip[] = [
-    promises.length > 0 && {
-      icon: "promise" as const,
-      label: plural(promises.length, "overdue promise"),
-    },
-    dueLoans.length > 0 && {
-      icon: "loan" as const,
-      label: `${plural(dueLoans.length, "loan update")} due`,
-    },
-    relationshipRows.length > 0 && {
-      icon: "list" as const,
-      label: `${relationshipRows.length} on this week's list`,
-    },
-  ].filter(Boolean) as HeroChip[];
-
   const openItems = promises.length + dueLoans.length + noteCount;
   const summary =
     openItems === 0
@@ -247,64 +279,39 @@ export default async function DashboardPage() {
           noteCount > 0 ? `, including ${plural(noteCount, "meeting note")} to capture` : ""
         }.`;
 
-  const nextMeeting = upcoming.meetings[0];
-
   return (
     <>
-      <HeroHeader
+      <DashboardHeader
         greeting={greeting()}
         firstName={profile?.display_name?.split(" ")[0] ?? null}
         summary={summary}
-        chips={chips}
-        coveragePct={coveragePct}
-        coveredCount={personalCovered}
-        activeCount={active.length}
-        hasPlan={Boolean(plan)}
         aiEnabled={getFlags().ai}
+        quickLog={quickLog}
       />
 
-      {/* Phones lead with today's work and end with the momentum summary;
-          desktop leads with momentum. */}
       <div className="flex flex-col gap-5">
-        <div className="order-3 xl:order-1">
-          <RelationshipMomentum
-            coverage={{
-              pct: coveragePct,
-              covered: personalCovered,
-              active: active.length,
-              change30: history.changeFrom30Days,
-              trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
-              dots: buildLenderDots(lenders),
-            }}
-            loans={{ statuses: loanStatuses, dueNow: dueLoans.length }}
-            meetings={{
-              upcoming: upcoming.meetings.length,
-              next: nextMeeting
-                ? {
-                    title: nextMeeting.title,
-                    startAt: nextMeeting.start_at,
-                    type: nextMeeting.meeting_type,
-                    withWhom: nextMeeting.attendees[0] ?? null,
-                  }
-                : null,
-              awaitingNotes: noteCount,
-            }}
-            split={split}
-          />
-        </div>
+        <MetricCards
+          activeRelationships={personalCovered}
+          needingAttention={needingAttention}
+          meetingsThisMonth={meetingsThisMonth ?? 0}
+          referralsReceived={referralsReceived ?? 0}
+          partnersProducing={partnersProducing}
+        />
 
-        <div className="order-1 xl:order-2">
+        {/* Phones lead with today's operational work. */}
+        <div className="order-1 xl:order-none">
           <TodayRibbon data={ribbon} />
         </div>
 
-        <div className="order-2 grid gap-5 xl:order-3 xl:grid-cols-[minmax(0,1fr)_344px]">
+        <div className="order-2 grid gap-5 xl:order-none xl:grid-cols-[minmax(0,1fr)_344px]">
           <RelationshipRows
             rows={relationshipRows}
             completed={completedCount}
             total={topItems.length}
             hasPlan={Boolean(plan)}
           />
-          <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
+          <div className="flex min-w-0 flex-col gap-5 xl:sticky xl:top-6 xl:self-start">
+            <RelationshipHealthWidget health={health} />
             <AgendaRail data={upcoming} />
           </div>
         </div>
