@@ -13,6 +13,7 @@ import { getFlags } from "@/lib/flags";
 import { formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { HeroHeader, type HeroChip } from "./hero-header";
+import { MetricCards, type Metric } from "./metric-cards";
 import { RelationshipMomentum } from "./momentum";
 import { TodayRibbon, type RibbonData } from "./today-ribbon";
 import {
@@ -93,6 +94,63 @@ export default async function DashboardPage() {
   const coveragePct =
     active.length === 0 ? 0 : Math.round((personalCovered / active.length) * 100);
   const split = buildCoverageSplit(lenders);
+
+  // ---- Metric cards (added below the hero) ---------------------------------
+  const OVERDUE_STATES = new Set(["overdue", "seriously_overdue", "never_contacted"]);
+  const attention = active.filter((l) => OVERDUE_STATES.has(l.coverage.personal)).length;
+
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
+  const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+    .toISOString()
+    .slice(0, 10);
+  // "Qualified" = a look that has moved past first inquiry and is still live.
+  const QUALIFIED_STAGES = [
+    "sources_uses_sent",
+    "needs_list_sent",
+    "documents_pending",
+    "ready_for_preflight",
+    "handed_off",
+  ];
+
+  const [meetingsThisMonth, looksGiven, producingRows] = await Promise.all([
+    supabase
+      .from("meetings")
+      .select("id", { count: "exact", head: true })
+      .gte("start_at", monthStart)
+      .lt("start_at", nextMonthStart)
+      .is("deleted_at", null),
+    // "Looks given" = lender-sourced opportunities received this month.
+    supabase
+      .from("opportunities")
+      .select("id", { count: "exact", head: true })
+      .in("communication_path", ["lender_led", "shared"])
+      .gte("received_at", monthStart)
+      .lt("received_at", nextMonthStart)
+      .is("deleted_at", null),
+    // Partners producing = distinct lenders with at least one qualified look.
+    supabase
+      .from("opportunities")
+      .select("lender_id")
+      .in("stage", QUALIFIED_STAGES)
+      .not("lender_id", "is", null)
+      .is("deleted_at", null),
+  ]);
+
+  const partnersProducing = new Set(
+    ((producingRows.data ?? []) as { lender_id: string | null }[])
+      .map((r) => r.lender_id)
+      .filter((id): id is string => id !== null),
+  ).size;
+
+  const metrics: Metric[] = [
+    { label: "Active relationships", value: personalCovered, href: "/lenders", icon: "active", tone: "blue" },
+    { label: "Needs attention", value: attention, href: "/needs-attention", icon: "attention", tone: "danger" },
+    { label: "Meetings this month", value: meetingsThisMonth.count ?? 0, href: "/follow-ups", icon: "meetings", tone: "plum" },
+    { label: "Looks given", value: looksGiven.count ?? 0, href: "/lenders", icon: "looks", tone: "gold" },
+    { label: "Partners producing", value: partnersProducing, href: "/lenders", icon: "partners", tone: "teal" },
+  ];
 
   // ---- This week's plan ----------------------------------------------------
   const planItemsResult = plan
@@ -262,6 +320,8 @@ export default async function DashboardPage() {
         hasPlan={Boolean(plan)}
         aiEnabled={getFlags().ai}
       />
+
+      <MetricCards metrics={metrics} />
 
       {/* Phones lead with today's work and end with the momentum summary;
           desktop leads with momentum. */}
