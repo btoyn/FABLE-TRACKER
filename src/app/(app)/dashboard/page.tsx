@@ -1,9 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ensureSampleData, getLendersWithCoverage } from "@/lib/data";
 import {
-  buildCoverageSplit,
-  buildLenderDots,
-  getCoverageHistory,
   getLoanStatuses,
   getRelationshipContext,
   getUpcoming,
@@ -14,7 +11,6 @@ import { formatDateTime } from "@/lib/utils";
 import { MEETING_TYPE_LABELS } from "@/lib/labels";
 import { HeroHeader, type HeroChip } from "./hero-header";
 import { MetricCards, type Metric } from "./metric-cards";
-import { RelationshipMomentum } from "./momentum";
 import { TodayRibbon, type RibbonData } from "./today-ribbon";
 import {
   RelationshipRows,
@@ -58,7 +54,6 @@ export default async function DashboardPage() {
     { data: overduePromises },
     { data: plan },
     upcoming,
-    history,
     loanStatuses,
     context,
   ] = await Promise.all([
@@ -83,7 +78,6 @@ export default async function DashboardPage() {
       .eq("week_start", weekStart)
       .maybeSingle(),
     getUpcoming(),
-    getCoverageHistory(),
     getLoanStatuses(),
     getRelationshipContext(),
   ]);
@@ -93,12 +87,8 @@ export default async function DashboardPage() {
   const personalCovered = active.filter((l) => l.coverage.personal === "on_track").length;
   const coveragePct =
     active.length === 0 ? 0 : Math.round((personalCovered / active.length) * 100);
-  const split = buildCoverageSplit(lenders);
 
-  // ---- Metric cards (added below the hero) ---------------------------------
-  const OVERDUE_STATES = new Set(["overdue", "seriously_overdue", "never_contacted"]);
-  const attention = active.filter((l) => OVERDUE_STATES.has(l.coverage.personal)).length;
-
+  // ---- Outcome tiles (Looks given · Partners producing) --------------------
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
     .toISOString()
     .slice(0, 10);
@@ -114,13 +104,7 @@ export default async function DashboardPage() {
     "handed_off",
   ];
 
-  const [meetingsThisMonth, looksGiven, producingRows] = await Promise.all([
-    supabase
-      .from("meetings")
-      .select("id", { count: "exact", head: true })
-      .gte("start_at", monthStart)
-      .lt("start_at", nextMonthStart)
-      .is("deleted_at", null),
+  const [looksGiven, producingRows] = await Promise.all([
     // "Looks given" = lender-sourced opportunities received this month.
     supabase
       .from("opportunities")
@@ -145,10 +129,7 @@ export default async function DashboardPage() {
   ).size;
 
   const metrics: Metric[] = [
-    { label: "Active relationships", value: personalCovered, href: "/lenders", icon: "active", tone: "blue" },
-    { label: "Needs attention", value: attention, href: "/needs-attention", icon: "attention", tone: "danger" },
-    { label: "Meetings this month", value: meetingsThisMonth.count ?? 0, href: "/follow-ups", icon: "meetings", tone: "plum" },
-    { label: "Looks given", value: looksGiven.count ?? 0, href: "/lenders", icon: "looks", tone: "gold" },
+    { label: "Looks given this month", value: looksGiven.count ?? 0, href: "/lenders", icon: "looks", tone: "gold" },
     { label: "Partners producing", value: partnersProducing, href: "/lenders", icon: "partners", tone: "teal" },
   ];
 
@@ -305,8 +286,6 @@ export default async function DashboardPage() {
           noteCount > 0 ? `, including ${plural(noteCount, "meeting note")} to capture` : ""
         }.`;
 
-  const nextMeeting = upcoming.meetings[0];
-
   return (
     <>
       <HeroHeader
@@ -321,43 +300,14 @@ export default async function DashboardPage() {
         aiEnabled={getFlags().ai}
       />
 
+      {/* Two outcome tiles — the only numbers kept, since nothing else shows
+          which relationships actually produce. */}
       <MetricCards metrics={metrics} />
 
-      {/* Phones lead with today's work and end with the momentum summary;
-          desktop leads with momentum. */}
       <div className="flex flex-col gap-5">
-        <div className="order-3 xl:order-1">
-          <RelationshipMomentum
-            coverage={{
-              pct: coveragePct,
-              covered: personalCovered,
-              active: active.length,
-              change30: history.changeFrom30Days,
-              trend: history.insufficientData ? [] : history.points.map((p) => p.pct),
-              dots: buildLenderDots(lenders),
-            }}
-            loans={{ statuses: loanStatuses, dueNow: dueLoans.length }}
-            meetings={{
-              upcoming: upcoming.meetings.length,
-              next: nextMeeting
-                ? {
-                    title: nextMeeting.title,
-                    startAt: nextMeeting.start_at,
-                    type: nextMeeting.meeting_type,
-                    withWhom: nextMeeting.attendees[0] ?? null,
-                  }
-                : null,
-              awaitingNotes: noteCount,
-            }}
-            split={split}
-          />
-        </div>
+        <TodayRibbon data={ribbon} />
 
-        <div className="order-1 xl:order-2">
-          <TodayRibbon data={ribbon} />
-        </div>
-
-        <div className="order-2 grid gap-5 xl:order-3 xl:grid-cols-[minmax(0,1fr)_344px]">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_344px]">
           <RelationshipRows
             rows={relationshipRows}
             completed={completedCount}

@@ -34,7 +34,7 @@ export function MetricCards({ metrics }: { metrics: Metric[] }) {
   return (
     <section
       aria-label="Key metrics"
-      className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
+      className="mb-5 grid grid-cols-2 gap-3 sm:max-w-xl"
     >
       {metrics.map((m) => {
         const Icon = ICONS[m.icon];
