@@ -96,6 +96,10 @@ quoted part underneath is ignored. It reads the answer:
 
 It never books a meeting off its own reading. You always press the button.
 
+**The paste is temporary and it's the wrong shape.** What this should do is read the reply on its
+own and only interrupt you when it genuinely needs a decision. See *What it takes to stop pasting*
+at the end of this guide — that's the target, not this.
+
 If nobody answers within four days (adjustable), the proposal turns up on your dashboard marked
 **No reply** so it doesn't quietly die.
 
@@ -223,11 +227,51 @@ None of the "not built" items are hard — mostly screens over tables that alrea
 doing first are the voice screen and the annual goal, since both improve something you already look
 at daily.
 
+## What it takes to stop pasting
+
+**The goal, stated plainly:** a lender replies, the app reads it, and it only comes to you if it
+actually needs your call. No pasting, no checking. Scheduling comes off your plate.
+
+That is the point of the whole project. Everything below is what stands between here and there.
+
+### 1. Somewhere the app can read the replies — removes the paste
+
+Nothing in software can read a lender's reply without access to where that reply landed. Two ways,
+easier ask first:
+
+| Route | The ask | Trade-off |
+|---|---|---|
+| **Shared mailbox** (preferred) | IT creates something like `crm@im504.com`. You add an Outlook rule copying meeting replies there. The app reads only that mailbox. | You're asking for one purpose-built mailbox, not your inbox. Much smaller conversation. Replies still land in your Outlook as normal — the rule copies, it doesn't move. |
+| **Direct access** | `Mail.Read` on your own account, delegated. | Fewer moving parts, no rule to maintain. But it's the permission that makes an IT department pause, because the sentence is "this app reads my email." |
+
+Either one deletes the paste step entirely. Nothing about the screens changes.
+
+### 2. An Anthropic API key — removes most of the interruptions
+
+Today the reading is ordinary code, so anything it isn't certain about comes to you. That's correct
+behavior but it's a low bar: *"I'm slammed that week but the following Tuesday could work if it's
+early"* is a perfectly clear answer to a human and this bounces it back.
+
+With the key, replies like that get handled instead of interrupting you. Roughly $4/month at your
+volume. This is independent of the mailbox question and improves both the current version and the
+automatic one.
+
+### Both are needed
+
+The key removes the *interruptions*. The mailbox removes the *paste*. Neither alone gets to hands-off
+scheduling — plan for both.
+
+### 3. Calendar access — removes the double-checking
+
+Separate from replies: `Calendars.ReadWrite` lets it see your real free/busy instead of working from
+the rules in Settings, so you stop having to sanity-check proposed dates against Outlook. It also
+lets it send the actual meeting invitation once a date is agreed.
+
 ## Loose ends
 
 1. **Add the redirect addresses in Supabase** (Authentication → URL Configuration), with the
    `https://` prefix. Until then *Forgot password* fails; signing in normally already works.
-2. **Set your annual approval goal** once that screen exists.
+2. **Set your availability** in Settings → *When you can meet*. Nothing suggests dates until you do.
 
 Done: the Vercel login wall is off, so the site opens normally on any device and can be installed
 to your home screen.
