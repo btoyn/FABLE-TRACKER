@@ -111,6 +111,32 @@ If nobody answers within four days (adjustable), the proposal turns up on your d
 | Schedule | Same screen, for any kind of meeting. Durations default: lunch and breakfast 60 min, golf 150, office visits 15. |
 | Replace | Drops them from this week and promotes the next lender on deck into the slot. Nothing is deleted — you're saying "not now." |
 
+## Keeping referral partners informed
+
+**Loan updates** in the sidebar. Add a loan — borrower name and who sent it over, nothing else.
+No amounts, no stages: that lives in the system that already tracks production, and a second
+half-kept copy would only ever be the wrong one.
+
+From then on it asks for a touch every 7 days, whether or not anything changed. Silence is what
+makes a referral partner nervous — they handed you a deal and then heard nothing.
+
+| Colour | Meaning |
+|---|---|
+| Teal | Up to date |
+| Gold | Due now, or up to a week past |
+| Red | More than a week late |
+
+**Log update** takes an optional line about what you actually told them. Worth typing: in six weeks
+*"what did I last tell Kelly about Cedar Ridge"* has an answer, and it's the raw material AI drafting
+will use to write the next one for you.
+
+The important part: logging a loan update also **counts as a personal touch with that lender**. It
+lands on their timeline and resets their coverage clock. Keeping a partner informed and keeping the
+relationship warm are the same act, so the app treats them as one.
+
+Press **Done** when the deal no longer needs updates. Nothing disappears — it moves to *No longer
+tracking*, and you can put it back.
+
 ## As it happens — the four habits
 
 **Log the touch.** Profile → *Log activity*: what happened, when, one line of summary. Tick *they
@@ -210,14 +236,13 @@ So you don't hunt for a screen that isn't built.
 | Promises, tasks, Needs Attention | Working | Both directions, filters |
 | Meetings | Working | Notes, brief status |
 | Proposing a meeting | Working | Suggests dates, writes the ask, tracks the reply |
-| Loan update tracking | Working | Weekly touch, logging |
+| Loan update tracking | Working | Add loans, weekly touch, logging with a note |
 | Import, export, trash, audit | Working | Full wizard, 90-day restore |
 | AI drafting in your voice | Needs key | Anthropic, a few dollars a month. Today it powers *Ask assistant* and nothing else. |
 | Daily digest by email | Needs key | Resend. The summary shows in the app either way. |
 | Real Outlook drafts & calendar | Needs IT | Microsoft 365 registration and admin consent at IMBL |
 | Your writing voice | Not built | Storage ready; needs the screen to paste samples |
 | Referral & deal tracking | Not built | Follow-up logic written and tested; no screen |
-| Active-loan management | Not built | Visible on the dashboard; can't add or edit loans |
 | Campaigns | Not built | Storage ready; no screen, no sending |
 | Trip planning | Not built | Shows in the rail if a trip exists; can't create one |
 | Meeting briefs | Not built | Status shown; nothing generates them |

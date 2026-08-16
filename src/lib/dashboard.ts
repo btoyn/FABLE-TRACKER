@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getPreferences, type LenderWithCoverage } from "@/lib/data";
 import { daysSince } from "@/lib/coverage";
+import { daysLateFrom, loanState } from "@/lib/loan-cadence";
 
 /** One plotted week in the personal-coverage trend. */
 export interface CoveragePoint {
@@ -372,7 +373,7 @@ export interface LoanStatus {
 /** One status block per active loan, so the zone can be counted at a glance. */
 export async function getLoanStatuses(): Promise<LoanStatus[]> {
   const supabase = await createClient();
-  const today = startOfDay(new Date()).getTime();
+  const today = startOfDay(new Date());
 
   const { data } = await supabase
     .from("active_loans")
@@ -382,9 +383,9 @@ export async function getLoanStatuses(): Promise<LoanStatus[]> {
     .order("next_update_due_at", { nullsFirst: false });
 
   return (data ?? []).map((loan) => {
-    const due = loan.next_update_due_at ? new Date(loan.next_update_due_at).getTime() : null;
-    const daysLate = due === null ? 0 : Math.floor((today - due) / 86_400_000);
-    const state: LoanUpdateState = daysLate < 0 ? "updated" : daysLate > 7 ? "overdue" : "due";
+    const due = loan.next_update_due_at ? new Date(loan.next_update_due_at) : null;
+    const daysLate = due === null ? 0 : daysLateFrom(due, today);
+    const state = loanState(daysLate, true) as LoanUpdateState;
     return {
       id: loan.id,
       borrower: loan.borrower_name,

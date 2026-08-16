@@ -8,7 +8,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { IconCircle, type IconCircleTone } from "@/components/ui/icon-circle";
 import { Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { captureMeetingNotes, logLoanUpdate } from "./actions";
+import { captureMeetingNotes } from "./actions";
+import { logLoanUpdate } from "../loans/actions";
 
 export interface RibbonData {
   notes: { id: string; title: string; when: string }[];

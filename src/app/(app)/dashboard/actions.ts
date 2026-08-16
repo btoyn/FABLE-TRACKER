@@ -269,54 +269,6 @@ export async function captureMeetingNotes(
   return {};
 }
 
-/**
- * Record this week's touch on an active loan and push the next one out a week
- * (§26 — every active loan gets a weekly update, even when nothing changed).
- */
-export async function logLoanUpdate(loanId: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not signed in." };
-
-  const { data: loan } = await supabase
-    .from("active_loans")
-    .select("id, lender_id, institution_id, borrower_name")
-    .eq("id", loanId)
-    .maybeSingle();
-  if (!loan) return { error: "That loan is no longer being tracked." };
-
-  const now = new Date();
-  const nextDue = new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10);
-
-  const { error } = await supabase
-    .from("active_loans")
-    .update({ last_update_sent_at: now.toISOString(), next_update_due_at: nextDue })
-    .eq("id", loanId);
-  if (error) return { error: error.message };
-
-  // Loan updates count as coverage (§9), so put one on the timeline too.
-  if (loan.lender_id) {
-    await supabase.from("activities").insert({
-      user_id: user.id,
-      lender_id: loan.lender_id,
-      institution_id: loan.institution_id,
-      active_loan_id: loan.id,
-      activity_type: "loan_update",
-      direction: "outbound",
-      occurred_at: now.toISOString(),
-      subject: `Weekly update — ${loan.borrower_name}`,
-      personal_touch: true,
-      counts_for_coverage: true,
-      source: "manual",
-    });
-  }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/follow-ups");
-  return {};
-}
 
 /** Mark a meeting's notes captured is handled elsewhere; this just clears the brief flag. */
 export async function markBriefReviewed(meetingId: string): Promise<{ error?: string }> {

@@ -57,6 +57,8 @@ export async function getLendersWithCoverage(): Promise<LenderWithCoverage[]> {
 export interface NavCounts {
   followUps: number;
   needsAttention: number;
+  /** Active loans whose weekly update is due or late. */
+  loansDue: number;
 }
 
 /**
@@ -68,7 +70,9 @@ export async function getNavCounts(): Promise<NavCounts> {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
-  const [openPromises, openTasks, wokenTasks, { data: lenders }, { data: coverage }, prefs] =
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [openPromises, openTasks, wokenTasks, loansDue, { data: lenders }, { data: coverage }, prefs] =
     await Promise.all([
       supabase
         .from("promises")
@@ -85,6 +89,13 @@ export async function getNavCounts(): Promise<NavCounts> {
         .select("id", { count: "exact", head: true })
         .eq("status", "snoozed")
         .lte("snoozed_until", nowIso)
+        .is("deleted_at", null),
+      // Loans whose weekly update is due or already late.
+      supabase
+        .from("active_loans")
+        .select("id", { count: "exact", head: true })
+        .eq("updates_active", true)
+        .lte("next_update_due_at", today)
         .is("deleted_at", null),
       supabase.from("lenders").select("id, active").is("deleted_at", null),
       supabase.from("lender_coverage").select("*"),
@@ -117,6 +128,7 @@ export async function getNavCounts(): Promise<NavCounts> {
   return {
     followUps: (openPromises.count ?? 0) + (openTasks.count ?? 0) + (wokenTasks.count ?? 0),
     needsAttention,
+    loansDue: loansDue.count ?? 0,
   };
 }
 

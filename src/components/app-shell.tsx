@@ -7,6 +7,7 @@ import {
   Users,
   Landmark,
   CheckSquare,
+  Banknote,
   AlertCircle,
   BookOpen,
   Settings,
@@ -23,6 +24,7 @@ const PRIMARY_NAV = [
   { href: "/lenders", label: "Lenders", icon: Users, count: null },
   { href: "/institutions", label: "Institutions", icon: Landmark, count: null },
   { href: "/follow-ups", label: "Follow-ups", icon: CheckSquare, count: "followUps" },
+  { href: "/loans", label: "Loan updates", icon: Banknote, count: "loansDue" },
   { href: "/needs-attention", label: "Needs Attention", icon: AlertCircle, count: "needsAttention" },
 ] as const;
 
@@ -45,9 +47,11 @@ const MOBILE_RIGHT = [
 ];
 
 /** Badge tone carries urgency, not just a count. */
-function badgeTone(kind: "followUps" | "needsAttention", count: number, active: boolean): string {
+function badgeTone(kind: "followUps" | "needsAttention" | "loansDue", count: number, active: boolean): string {
   if (active) return "bg-white/25 text-white";
   if (kind === "needsAttention") return "bg-danger-soft text-[#a8434a]";
+  // A loan update that's due is time-sensitive but not yet a problem.
+  if (kind === "loansDue") return "bg-gold-soft text-[#8a6215]";
   return count > 5 ? "bg-gold-soft text-[#8a6215]" : "bg-primary-soft text-[#2a49b4]";
 }
 
@@ -64,7 +68,7 @@ function NavLink({
   icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   count?: number;
-  countKind?: "followUps" | "needsAttention";
+  countKind?: "followUps" | "needsAttention" | "loansDue";
 }) {
   return (
     <Link
