@@ -7,14 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { createClient } from "@/lib/supabase/server";
 import { getFlags } from "@/lib/flags";
 import { SettingsForm } from "./settings-form";
+import { AvailabilityCard } from "./availability-card";
+import { InvitesCard } from "./invites-card";
+import { listInvites } from "./invite-actions";
 
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const [{ data: profile }, { data: prefs }] = await Promise.all([
+  const [{ data: profile }, { data: prefs }, { data: availability }, inviteResult] = await Promise.all([
     supabase.from("users").select("*").maybeSingle(),
     supabase.from("user_preferences").select("*").maybeSingle(),
+    supabase
+      .from("availability_rules")
+      .select("meeting_type, weekdays, start_minute, end_minute"),
+    listInvites(),
   ]);
   const flags = getFlags();
 
@@ -39,6 +46,23 @@ export default async function SettingsPage() {
             daily_digest_time: (prefs?.daily_digest_time ?? "08:00").slice(0, 5),
           }}
         />
+
+        <AvailabilityCard
+          initialRules={(availability ?? []).map((r) => ({
+            meetingType: r.meeting_type,
+            weekdays: r.weekdays ?? [],
+            startMinute: r.start_minute,
+            endMinute: r.end_minute,
+          }))}
+          initialScheduling={{
+            propose_horizon_days: prefs?.propose_horizon_days ?? 14,
+            proposal_chase_days: prefs?.proposal_chase_days ?? 4,
+            proposal_slot_count: prefs?.proposal_slot_count ?? 2,
+          }}
+        />
+
+        {/* Only the workspace admin gets this — listInvites errors for everyone else. */}
+        {inviteResult.invites && <InvitesCard initialInvites={inviteResult.invites} />}
 
         <Card>
           <CardHeader>

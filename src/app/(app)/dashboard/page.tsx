@@ -7,6 +7,7 @@ import {
   getCoverageHistory,
   getLoanStatuses,
   getRelationshipContext,
+  getProposalQueue,
   getUpcoming,
   weekStartOf,
 } from "@/lib/dashboard";
@@ -23,6 +24,7 @@ import {
   type RelationshipRow,
 } from "./relationship-rows";
 import { AgendaRail } from "./agenda-rail";
+import { ProposalQueue } from "./proposal-queue";
 import type { AvatarStatus } from "@/components/ui/avatar";
 
 export const metadata = { title: "Dashboard" };
@@ -62,6 +64,7 @@ export default async function DashboardPage() {
     history,
     loanStatuses,
     context,
+    proposals,
   ] = await Promise.all([
     getLendersWithCoverage(),
     supabase.from("users").select("display_name").maybeSingle(),
@@ -92,6 +95,7 @@ export default async function DashboardPage() {
     getCoverageHistory(),
     getLoanStatuses(),
     getRelationshipContext(),
+    getProposalQueue(),
   ]);
 
   // ---- Coverage ------------------------------------------------------------
@@ -315,6 +319,11 @@ export default async function DashboardPage() {
 
         <div className="order-1 xl:order-2">
           <TodayRibbon data={ribbon} />
+        </div>
+
+        {/* Only renders when something is actually in flight. */}
+        <div className="order-1 xl:order-2">
+          <ProposalQueue data={proposals} />
         </div>
 
         <div className="order-2 grid gap-5 xl:order-3 xl:grid-cols-[minmax(0,1fr)_344px]">

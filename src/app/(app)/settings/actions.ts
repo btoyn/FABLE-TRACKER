@@ -48,6 +48,75 @@ export async function updateProfile(fields: {
   return {};
 }
 
+export interface AvailabilityInput {
+  meetingType: string;
+  /** 0 = Sunday. Empty means this kind of meeting is never proposed. */
+  weekdays: number[];
+  startMinute: number;
+  endMinute: number;
+}
+
+/**
+ * Replaces the availability rules wholesale (spec §15).
+ *
+ * Delete-then-insert rather than a per-row diff: there are at most five rows,
+ * the screen always submits all of them, and a partial save would leave the
+ * scheduler proposing dates from a half-updated set of rules.
+ */
+export async function updateAvailability(
+  rules: AvailabilityInput[],
+  scheduling: {
+    propose_horizon_days: number;
+    proposal_chase_days: number;
+    proposal_slot_count: number;
+  },
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  for (const rule of rules) {
+    if (rule.endMinute <= rule.startMinute) {
+      return { error: `The ${rule.meetingType.replace(/_/g, " ")} window ends before it starts.` };
+    }
+  }
+
+  const { error: prefsError } = await supabase
+    .from("user_preferences")
+    .update(scheduling)
+    .eq("user_id", user.id);
+  if (prefsError) return { error: prefsError.message };
+
+  const { error: clearError } = await supabase
+    .from("availability_rules")
+    .delete()
+    .eq("user_id", user.id);
+  if (clearError) return { error: clearError.message };
+
+  // A type with no days selected simply has no row — that is how "never
+  // propose golf" is stored.
+  const rows = rules
+    .filter((r) => r.weekdays.length > 0)
+    .map((r) => ({
+      user_id: user.id,
+      meeting_type: r.meetingType,
+      weekdays: r.weekdays,
+      start_minute: r.startMinute,
+      end_minute: r.endMinute,
+    }));
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from("availability_rules").insert(rows);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  return {};
+}
+
 export async function signOut(): Promise<never> {
   const supabase = await createClient();
   await supabase.auth.signOut();

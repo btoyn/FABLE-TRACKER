@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarPlus, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProposeMeeting } from "@/components/propose-meeting";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
@@ -105,6 +106,13 @@ export function LenderTools({
         )}
 
         <div className="flex flex-wrap gap-2">
+          <ProposeMeeting lenderId={lender.id}>
+            {(open) => (
+              <Button size="sm" onClick={open}>
+                <CalendarPlus className="h-3.5 w-3.5" /> Propose a meeting
+              </Button>
+            )}
+          </ProposeMeeting>
           <Button size="sm" variant="secondary" onClick={() => setPanel(panel === "log" ? "none" : "log")}>
             <Plus className="h-3.5 w-3.5" /> Log activity
           </Button>

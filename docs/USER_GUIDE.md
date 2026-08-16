@@ -74,11 +74,37 @@ contacted.
 You don't tick anything off — **logging a touch closes the row automatically** and fills the progress
 bar. **View all** reveals the rest. Ten is the plan; five is what fits in a sitting.
 
+## Asking someone to lunch
+
+Press **Invite to lunch** on a weekly-list row, or **Propose a meeting** on anyone's profile.
+
+It picks open dates from the hours you set in Settings, skipping anything already booked and any
+date you've already dangled in front of somebody else. It writes the note — "are you free Thursday
+the 13th or Tuesday the 18th around 11:30?" — and you edit whatever you like before sending. The
+send opens your normal mail app, so the thread lives in Outlook where it belongs.
+
+**It cannot see your Outlook calendar yet.** Until IT approves that, the dates come from your
+availability rules alone, so glance at them before you send. Everything else about the screen stays
+the same once that's connected.
+
+When they write back, press **They replied** on your dashboard and paste the whole email in — the
+quoted part underneath is ignored. It reads the answer:
+
+- **A clear yes to one of your dates** → offers to schedule it
+- **A different date** → checks it against your hours and asks "schedule it?"
+- **Anything vague** → says so plainly and leaves it with you
+
+It never books a meeting off its own reading. You always press the button.
+
+If nobody answers within four days (adjustable), the proposal turns up on your dashboard marked
+**No reply** so it doesn't quietly die.
+
 | Button | What it does |
 |---|---|
 | Draft email | Opens Outlook addressed to them. You send it as yourself so replies land in your normal thread history; the app then asks whether it went out and logs it. It deliberately never sends lender mail on your behalf — system-address mail reads as bulk and hurts deliverability. |
 | Text | Opens Messages with their number, then offers to log it. |
-| Schedule | Places a **tentative hold** — type, time, optional location. Stays tentative until they reply and sits under *Waiting on replies*. Durations default: lunch and breakfast 60 min, golf 150, office visits and pop-ins 15. |
+| Invite to lunch | Opens the scheduling screen described above. |
+| Schedule | Same screen, for any kind of meeting. Durations default: lunch and breakfast 60 min, golf 150, office visits 15. |
 | Replace | Drops them from this week and promotes the next lender on deck into the slot. Nothing is deleted — you're saying "not now." |
 
 ## As it happens — the four habits
@@ -159,7 +185,9 @@ offers to clear it first, so demo and real lenders never mix.
 | Record something I owe | Profile → Add promise → I promised → due date |
 | See who's slipping | Needs Attention, or the Overdue band on the status bar |
 | Plan a St. George trip | Needs Attention → territory Southern Utah |
-| Book a tentative lunch | Schedule on their weekly-list row |
+| Ask someone to lunch | Schedule on their row, or Propose a meeting on their profile |
+| Set when you can meet | Settings → When you can meet |
+| Add another loan officer | Settings → Invite a loan officer |
 | Write up a meeting | Dashboard → Capture notes |
 | Note that someone moved banks | Profile → Changed banks? |
 | Rebuild this week's list | Start weekly outreach in the banner |
@@ -176,7 +204,8 @@ So you don't hunt for a screen that isn't built.
 | Dashboard, coverage, weekly list | Working | Everything above |
 | Lenders, institutions, profiles | Working | Search, timelines, bank changes |
 | Promises, tasks, Needs Attention | Working | Both directions, filters |
-| Meetings | Working | Tentative holds, notes, brief status |
+| Meetings | Working | Notes, brief status |
+| Proposing a meeting | Working | Suggests dates, writes the ask, tracks the reply |
 | Loan update tracking | Working | Weekly touch, logging |
 | Import, export, trash, audit | Working | Full wizard, 90-day restore |
 | AI drafting in your voice | Needs key | Anthropic, a few dollars a month. Today it powers *Ask assistant* and nothing else. |

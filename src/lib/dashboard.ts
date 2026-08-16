@@ -451,4 +451,94 @@ export async function getRelationshipContext(): Promise<RelationshipContext> {
   };
 }
 
+export interface ProposalRow {
+  id: string;
+  lenderId: string;
+  lenderName: string;
+  firstName: string;
+  meetingType: string;
+  customLabel: string | null;
+  /** ISO instants, in the order they were offered. */
+  offeredSlots: string[];
+  status: string;
+  sentAt: string | null;
+  /** Days since it went out, for the "waiting 6d" badge. */
+  waitingDays: number;
+  replyText: string | null;
+  counteredSlot: string | null;
+  counteredConflicts: boolean | null;
+  /** Past the chase threshold with no reply and no recent nudge. */
+  overdue: boolean;
+}
+
+export interface ProposalQueue {
+  /** Replied and needs him to say yes — accepted dates and counter-offers. */
+  needsDecision: ProposalRow[];
+  /** Sent, still silent. */
+  waiting: ProposalRow[];
+  chaseDays: number;
+}
+
+/**
+ * Everything in flight on the scheduling side (spec §15).
+ *
+ * Split by what he has to do about it: decide, or wait. A proposal he already
+ * nudged today drops out of the overdue set so the dashboard doesn't ask twice.
+ */
+export async function getProposalQueue(): Promise<ProposalQueue> {
+  const supabase = await createClient();
+  const now = new Date();
+
+  const [{ data: prefs }, { data: rows }] = await Promise.all([
+    supabase.from("user_preferences").select("proposal_chase_days").maybeSingle(),
+    supabase
+      .from("meeting_proposals")
+      .select(
+        "id, lender_id, meeting_type, custom_label, offered_slots, status, sent_at, reply_text, countered_slot, countered_conflicts, last_nudged_at, lender:lenders(full_name, first_name)",
+      )
+      .in("status", ["sent", "accepted", "countered"])
+      .is("deleted_at", null)
+      .order("sent_at", { nullsFirst: false }),
+  ]);
+
+  const chaseDays = prefs?.proposal_chase_days ?? 4;
+  const needsDecision: ProposalRow[] = [];
+  const waiting: ProposalRow[] = [];
+
+  for (const r of rows ?? []) {
+    const lender = r.lender as unknown as { full_name: string; first_name: string } | null;
+    if (!lender) continue;
+
+    const sentMs = r.sent_at ? new Date(r.sent_at).getTime() : null;
+    const waitingDays = sentMs ? Math.floor((now.getTime() - sentMs) / 86_400_000) : 0;
+    const nudgedMs = r.last_nudged_at ? new Date(r.last_nudged_at).getTime() : null;
+    const nudgedRecently = nudgedMs !== null && now.getTime() - nudgedMs < chaseDays * 86_400_000;
+
+    const row: ProposalRow = {
+      id: r.id,
+      lenderId: r.lender_id,
+      lenderName: lender.full_name,
+      firstName: lender.first_name,
+      meetingType: r.meeting_type,
+      customLabel: r.custom_label,
+      offeredSlots: r.offered_slots ?? [],
+      status: r.status,
+      sentAt: r.sent_at,
+      waitingDays,
+      replyText: r.reply_text,
+      counteredSlot: r.countered_slot,
+      counteredConflicts: r.countered_conflicts,
+      overdue: r.status === "sent" && waitingDays >= chaseDays && !nudgedRecently,
+    };
+
+    if (r.status === "sent") waiting.push(row);
+    else needsDecision.push(row);
+  }
+
+  // Longest wait first — those are the ones going cold.
+  waiting.sort((a, b) => b.waitingDays - a.waitingDays);
+
+  return { needsDecision, waiting, chaseDays };
+}
+
 export { daysSince };

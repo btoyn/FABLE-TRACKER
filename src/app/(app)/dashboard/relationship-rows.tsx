@@ -16,11 +16,11 @@ import {
 import { Avatar, type AvatarStatus } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Label, Select } from "@/components/ui/input";
-import { MEETING_TYPE_LABELS } from "@/lib/labels";
+import { Input, Select } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { logActivity } from "../activity-actions";
-import { replacePlanItem, scheduleTentativeMeeting } from "./actions";
+import { replacePlanItem } from "./actions";
+import { ProposeMeeting } from "@/components/propose-meeting";
 
 /** Why this lender surfaced, as a short chip rather than a sentence. */
 export interface ReasonChip {
@@ -158,7 +158,7 @@ export function RelationshipRows({
 function Row({ row, alt }: { row: RelationshipRow; alt: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [panel, setPanel] = useState<"none" | "schedule" | "log">("none");
+  const [panel, setPanel] = useState<"none" | "log">("none");
   const [showMore, setShowMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -182,8 +182,10 @@ function Row({ row, alt }: { row: RelationshipRow; alt: boolean }) {
   const sms = row.mobile ? `sms:${row.mobile.replace(/[^\d+]/g, "")}` : null;
   const PrimaryIcon = PRIMARY_ICON[row.primary];
 
-  /** The dominant action: email where we can, otherwise open the log panel. */
-  const primaryIsEmail = row.primary !== "log_followup" && Boolean(mailto);
+  /** Inviting someone out has its own screen — it needs dates, not a blank email. */
+  const primaryIsProposal = row.primary === "invite_lunch";
+  /** Otherwise: email where we can, else open the log panel. */
+  const primaryIsEmail = !primaryIsProposal && row.primary !== "log_followup" && Boolean(mailto);
 
   return (
     <li
@@ -245,7 +247,16 @@ function Row({ row, alt }: { row: RelationshipRow; alt: boolean }) {
 
           {/* One dominant action, quiet secondaries, the rest behind overflow */}
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
-            {primaryIsEmail && mailto ? (
+            {primaryIsProposal ? (
+              <ProposeMeeting lenderId={row.lenderId}>
+                {(open) => (
+                  <Button size="touch" variant="primary" onClick={open}>
+                    <PrimaryIcon className="h-4 w-4" />
+                    {PRIMARY_LABEL[row.primary]}
+                  </Button>
+                )}
+              </ProposeMeeting>
+            ) : primaryIsEmail && mailto ? (
               <a
                 href={mailto}
                 onClick={() => setPanel("log")}
@@ -276,14 +287,14 @@ function Row({ row, alt }: { row: RelationshipRow; alt: boolean }) {
                 Text
               </a>
             )}
-            <Button
-              size="touch"
-              variant="quiet"
-              onClick={() => setPanel(panel === "schedule" ? "none" : "schedule")}
-            >
-              <CalendarPlus className="h-4 w-4" />
-              Schedule
-            </Button>
+            <ProposeMeeting lenderId={row.lenderId}>
+              {(open) => (
+                <Button size="touch" variant="quiet" onClick={open}>
+                  <CalendarPlus className="h-4 w-4" />
+                  Schedule
+                </Button>
+              )}
+            </ProposeMeeting>
 
             <div className="relative">
               <Button
@@ -352,56 +363,6 @@ function Row({ row, alt }: { row: RelationshipRow; alt: boolean }) {
                 </Button>
                 <Button type="button" size="touch" variant="quiet" onClick={() => setPanel("none")}>
                   Not yet
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {panel === "schedule" && (
-            <form
-              className="animate-row-settle mt-3 space-y-2.5 rounded-xl border border-border bg-background p-3.5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const f = new FormData(e.currentTarget);
-                run(() =>
-                  scheduleTentativeMeeting({
-                    lenderId: row.lenderId,
-                    meetingType: String(f.get("meetingType")),
-                    startAt: String(f.get("startAt")),
-                    locationName: String(f.get("location") ?? ""),
-                  }),
-                );
-              }}
-            >
-              <p className="text-[13.5px] font-semibold">
-                Tentative hold — stays tentative until {row.firstName} replies.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <Label>Type</Label>
-                  <Select name="meetingType" defaultValue="lunch">
-                    {Object.entries(MEETING_TYPE_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <Label>When</Label>
-                  <Input name="startAt" type="datetime-local" required />
-                </div>
-              </div>
-              <div>
-                <Label>Where (optional)</Label>
-                <Input name="location" placeholder="e.g. Hearth on 25th" />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" size="touch" disabled={pending}>
-                  {pending ? "Saving…" : "Save hold"}
-                </Button>
-                <Button type="button" size="touch" variant="quiet" onClick={() => setPanel("none")}>
-                  Cancel
                 </Button>
               </div>
             </form>
