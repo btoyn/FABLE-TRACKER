@@ -81,12 +81,11 @@ function LoginForm() {
           <Link href="/reset-password" className="text-primary hover:underline">
             Forgot password?
           </Link>
-          {/* Only offered when signups are open, so it is never a dead end. */}
-          {signupsOpen && (
-            <Link href="/signup" className="text-primary hover:underline">
-              Create account
-            </Link>
-          )}
+          {/* Open signups take anyone; otherwise the page asks for an invite
+              code, so the link is still worth offering — just labelled honestly. */}
+          <Link href="/signup" className="text-primary hover:underline">
+            {signupsOpen ? "Create account" : "Have an invite code?"}
+          </Link>
         </div>
       </CardContent>
     </Card>

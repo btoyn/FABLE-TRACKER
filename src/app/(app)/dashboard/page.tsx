@@ -1,3 +1,4 @@
+import { FlaskConical } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureSampleData, getLendersWithCoverage } from "@/lib/data";
 import {
@@ -56,6 +57,7 @@ export default async function DashboardPage() {
     { data: missingNotes },
     { data: overduePromises },
     { data: plan },
+    { count: sampleLenders },
     upcoming,
     history,
     loanStatuses,
@@ -81,6 +83,11 @@ export default async function DashboardPage() {
       .select("id")
       .eq("week_start", weekStart)
       .maybeSingle(),
+    supabase
+      .from("lenders")
+      .select("id", { count: "exact", head: true })
+      .eq("is_sample", true)
+      .is("deleted_at", null),
     getUpcoming(),
     getCoverageHistory(),
     getLoanStatuses(),
@@ -251,6 +258,19 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {/* A brand-new workspace is seeded with fictional lenders. Say so before
+          anyone reads these numbers as somebody's real book of business. */}
+      {(sampleLenders ?? 0) > 0 && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-gold-border bg-gold-soft px-4 py-3">
+          <FlaskConical className="mt-px h-4 w-4 shrink-0 text-gold" />
+          <p className="text-[13px] leading-relaxed text-[#6d5210]">
+            <span className="font-semibold">Sample data.</span> Every lender, meeting and loan on
+            this screen is made up, so you can try things without breaking anything. Importing a
+            real lender list from Settings clears all of it.
+          </p>
+        </div>
+      )}
+
       <HeroHeader
         greeting={greeting()}
         firstName={profile?.display_name?.split(" ")[0] ?? null}

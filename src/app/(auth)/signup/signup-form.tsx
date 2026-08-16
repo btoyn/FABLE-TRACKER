@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input, Label, FieldHint } from "@/components/ui/input";
 
-export function SignupForm() {
+export function SignupForm({ requireInvite = false }: { requireInvite?: boolean }) {
   const router = useRouter();
+  const [inviteCode, setInviteCode] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +23,20 @@ export function SignupForm() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
+
+    // Check the code before creating anything, so a bad code fails cleanly
+    // instead of leaving a half-made account behind.
+    if (requireInvite) {
+      const { data: valid, error: inviteError } = await supabase.rpc("invite_is_valid", {
+        p_code: inviteCode,
+      });
+      if (inviteError || !valid) {
+        setError("That invite code isn't valid, or it has already been used.");
+        setLoading(false);
+        return;
+      }
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -35,6 +50,10 @@ export function SignupForm() {
       setLoading(false);
       return;
     }
+
+    // Burn the code. A failure here is not worth blocking the new account for.
+    if (requireInvite) await supabase.rpc("redeem_invite", { p_code: inviteCode });
+
     if (data.session) {
       router.push("/dashboard");
       router.refresh();
@@ -62,11 +81,27 @@ export function SignupForm() {
       <CardHeader>
         <CardTitle className="text-lg">Create your account</CardTitle>
         <CardDescription>
-          Your workspace is private — only you can see your lenders and notes.
+          {requireInvite
+            ? "Accounts are by invitation. Your workspace is private — nobody else can see your lenders and notes."
+            : "Your workspace is private — only you can see your lenders and notes."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {requireInvite && (
+            <div>
+              <Label htmlFor="inviteCode">Invite code</Label>
+              <Input
+                id="inviteCode"
+                required
+                autoComplete="off"
+                spellCheck={false}
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+              />
+              <FieldHint>The code you were sent. Each one works once.</FieldHint>
+            </div>
+          )}
           <div>
             <Label htmlFor="displayName">Your name</Label>
             <Input
