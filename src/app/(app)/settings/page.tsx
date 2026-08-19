@@ -35,6 +35,7 @@ export default async function SettingsPage() {
             display_name: profile?.display_name ?? "",
             home_city: profile?.home_city ?? "",
             email: profile?.email ?? "",
+            email_signature: profile?.email_signature ?? "",
           }}
           prefs={{
             default_contact_goal_days: prefs?.default_contact_goal_days ?? 30,

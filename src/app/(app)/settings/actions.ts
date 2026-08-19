@@ -34,6 +34,7 @@ export async function updatePreferences(fields: {
 export async function updateProfile(fields: {
   display_name: string;
   home_city: string;
+  email_signature: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
@@ -46,6 +47,7 @@ export async function updateProfile(fields: {
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
+  revalidatePath("/loans");
   return {};
 }
 

@@ -20,7 +20,7 @@ export default async function LoansPage() {
     supabase
       .from("active_loans")
       .select(
-        "id, borrower_name, updates_active, last_update_sent_at, next_update_due_at, lender:lenders(id, full_name, institution:institutions(name))",
+        "id, borrower_name, updates_active, last_update_sent_at, next_update_due_at, closing_outcome, lender:lenders(id, full_name, institution:institutions(name))",
       )
       .is("deleted_at", null)
       .order("next_update_due_at", { nullsFirst: false }),
@@ -49,6 +49,7 @@ export default async function LoansPage() {
       lenderName: lender?.full_name ?? null,
       institution: lender?.institution?.name ?? null,
       active: l.updates_active,
+      closingOutcome: l.closing_outcome,
       lastUpdateAt: l.last_update_sent_at,
       daysLate: Math.max(0, daysLate),
       state: loanState(daysLate, l.updates_active),

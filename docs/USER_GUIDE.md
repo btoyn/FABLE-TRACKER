@@ -126,16 +126,38 @@ makes a referral partner nervous — they handed you a deal and then heard nothi
 | Gold | Due now, or up to a week past |
 | Red | More than a week late |
 
-**Log update** takes an optional line about what you actually told them. Worth typing: in six weeks
-*"what did I last tell Kelly about Cedar Ridge"* has an answer, and it's the raw material AI drafting
-will use to write the next one for you.
+**Draft update** writes the email. There are no stages to pick — you already know where the loan is,
+so the app doesn't ask.
 
-The important part: logging a loan update also **counts as a personal touch with that lender**. It
-lands on their timeline and resets their coverage clock. Keeping a partner informed and keeping the
-relationship warm are the same act, so the app treats them as one.
+The first week it sets up a skeleton: greeting, "just wanted to give you my weekly update on the
+Harris loan," your signature, and a gap in the middle for the news. Write the middle.
 
-Press **Done** when the deal no longer needs updates. Nothing disappears — it moves to *No longer
-tracking*, and you can put it back.
+**Every week after, the box opens with exactly what you sent last week.** Change what changed. If
+nothing changed, the email still says where the loan actually stands, which beats "no update."
+
+Tick **Send to the borrower too** to put them on the same email. Type their address once and it's
+saved with the loan — but they're off by default, so you decide each week.
+
+**Open in Outlook** hands the draft to Outlook with the subject, recipients and body filled in. You
+press send there. **That click marks the week done and restarts the clock** — the app can't see
+whether you actually sent it, so if you get pulled away, that week still reads as done. If the email
+is long enough that Outlook might truncate it, the button steps aside and tells you to use **Copy**.
+
+Each update lands on the lender's timeline and **counts as a personal touch**, so keeping a partner
+informed and keeping the relationship warm are the same act.
+
+Two ways a loan ends:
+
+| Button | What happens |
+|---|---|
+| **Sent to closing** | Drafts the handoff email — SBA approved, closing team reaching out, 45–90 days, or on certificate of occupancy if you tick *construction involved*. Sending it stops the weekly asking. |
+| **✕** | Didn't happen. Stops the clock, sends nothing. You make the phone call. |
+
+Nothing disappears either way — it moves to *No longer tracking*, labelled with which ending it was,
+and the count of how many reached closing sits in that heading. You can put any of them back.
+
+Set your signature in **Settings → Email signature**. It only seeds the first draft on each loan;
+after that your own edits carry forward.
 
 ## When a lender mentions a deal
 
@@ -244,6 +266,8 @@ offers to clear it first, so demo and real lenders never mix.
 | Ask someone to lunch | Schedule on their row, or Propose a meeting on their profile |
 | Set when you can meet | Settings → When you can meet |
 | Add another loan officer | Settings → Invite a loan officer |
+| Send this week's loan update | Loans → Draft update → Open in Outlook |
+| Set my email signature | Settings → Email signature |
 | Write up a meeting | Dashboard → Capture notes |
 | Note that someone moved banks | Profile → Changed banks? |
 | Rebuild this week's list | Start weekly outreach in the banner |
@@ -263,12 +287,12 @@ So you don't hunt for a screen that isn't built.
 | Promises, tasks, Needs Attention | Working | Both directions, filters |
 | Meetings | Working | Notes, brief status |
 | Proposing a meeting | Working | Suggests dates, writes the ask, tracks the reply |
-| Loan update tracking | Working | Add loans, weekly touch, logging with a note |
+| Loan update tracking | Working | Weekly email drafts, borrower option, two endings |
 | Looks from lenders | Working | Log a mention, follow-up clock, who's reaching out |
 | Import, export, trash, audit | Working | Full wizard, 90-day restore |
 | AI drafting in your voice | Needs key | Anthropic, a few dollars a month. Today it powers *Ask assistant* and nothing else. |
 | Daily digest by email | Needs key | Resend. The summary shows in the app either way. |
-| Real Outlook drafts & calendar | Needs IT | Microsoft 365 registration and admin consent at IMBL |
+| Real Outlook drafts & calendar | Needs IT | Entra app registration and admin consent. Today loan updates hand off via a mailto link, which can't confirm a send. |
 | Your writing voice | Not built | Storage ready; needs the screen to paste samples |
 | Campaigns | Not built | Storage ready; no screen, no sending |
 | Trip planning | Not built | Shows in the rail if a trip exists; can't create one |

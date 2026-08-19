@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { Check, Mail, Plus, RotateCcw, Search, Trash2, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,7 +11,8 @@ import { Input, Label } from "@/components/ui/input";
 import { matchScore } from "@/lib/fuzzy";
 import type { LoanState } from "@/lib/loan-cadence";
 import { cn, relativeDays } from "@/lib/utils";
-import { closeLoan, createLoan, deleteLoan, logLoanUpdate, reopenLoan } from "./actions";
+import { closeLoan, createLoan, deleteLoan, reopenLoan } from "./actions";
+import { UpdateDraft } from "./update-draft";
 
 export interface LoanRow {
   id: string;
@@ -20,6 +21,7 @@ export interface LoanRow {
   lenderName: string | null;
   institution: string | null;
   active: boolean;
+  closingOutcome: "sent_to_closing" | "did_not_happen" | null;
   lastUpdateAt: string | null;
   daysLate: number;
   state: LoanState;
@@ -38,12 +40,18 @@ const STATE_STYLE: Record<LoanState, { dot: string; label: string; tone: string 
   closed: { dot: "bg-[#c9cfdd]", label: "Not tracking", tone: "text-muted" },
 };
 
+const OUTCOME_LABEL: Record<"sent_to_closing" | "did_not_happen", string> = {
+  sent_to_closing: "Sent to closing",
+  did_not_happen: "Didn't happen",
+};
+
 export function LoanList({ rows, lenders }: { rows: LoanRow[]; lenders: LoanLender[] }) {
   const [adding, setAdding] = useState(false);
 
   const active = rows.filter((r) => r.active);
   const closed = rows.filter((r) => !r.active);
   const needing = active.filter((r) => r.state !== "updated").length;
+  const reachedClosing = closed.filter((r) => r.closingOutcome === "sent_to_closing").length;
 
   return (
     <div className="space-y-5">
@@ -92,6 +100,7 @@ export function LoanList({ rows, lenders }: { rows: LoanRow[]; lenders: LoanLend
           <CardContent className="pt-6">
             <p className="mb-3 text-[13px] font-semibold text-muted">
               No longer tracking ({closed.length})
+              {reachedClosing > 0 && ` · ${reachedClosing} reached closing`}
             </p>
             <ul className="divide-y divide-hairline">
               {closed.map((loan) => (
@@ -217,8 +226,8 @@ function AddLoan({ lenders, onDone }: { lenders: LoanLender[]; onDone: () => voi
 function LoanItem({ loan }: { loan: LoanRow }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [logging, setLogging] = useState(false);
-  const [note, setNote] = useState("");
+  const [panel, setPanel] = useState<"draft" | "handoff" | null>(null);
+  const [construction, setConstruction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const style = STATE_STYLE[loan.state];
 
@@ -230,8 +239,7 @@ function LoanItem({ loan }: { loan: LoanRow }) {
         setError(result.error);
         return;
       }
-      setLogging(false);
-      setNote("");
+      setPanel(null);
       router.refresh();
     });
   }
@@ -256,7 +264,7 @@ function LoanItem({ loan }: { loan: LoanRow }) {
             {loan.institution && ` · ${loan.institution}`}
           </p>
           <p className={cn("mt-1 text-[12.5px] font-medium", style.tone)}>
-            {style.label}
+            {loan.closingOutcome ? OUTCOME_LABEL[loan.closingOutcome] : style.label}
             {loan.state === "overdue" && ` · ${loan.daysLate} days late`}
             {loan.lastUpdateAt
               ? ` · last update ${relativeDays(loan.lastUpdateAt)}`
@@ -267,16 +275,30 @@ function LoanItem({ loan }: { loan: LoanRow }) {
         <div className="flex shrink-0 flex-wrap gap-2">
           {loan.active ? (
             <>
-              <Button size="sm" onClick={() => setLogging((v) => !v)} disabled={pending}>
-                Log update
+              <Button
+                size="sm"
+                onClick={() => setPanel((p) => (p === "draft" ? null : "draft"))}
+                disabled={pending}
+              >
+                <Mail className="h-3.5 w-3.5" /> Draft update
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={() => run(() => closeLoan(loan.id))}
+                onClick={() => setPanel((p) => (p === "handoff" ? null : "handoff"))}
                 disabled={pending}
+                title="SBA approved — send the handoff email and stop the weekly updates"
               >
-                <Check className="h-3.5 w-3.5" /> Done
+                <Check className="h-3.5 w-3.5" /> Sent to closing
+              </Button>
+              <Button
+                size="sm"
+                variant="quiet"
+                onClick={() => run(() => closeLoan(loan.id, "did_not_happen"))}
+                disabled={pending}
+                title="Didn't happen — stops the weekly updates, sends nothing"
+              >
+                <XCircle className="h-3.5 w-3.5" />
               </Button>
             </>
           ) : (
@@ -303,34 +325,28 @@ function LoanItem({ loan }: { loan: LoanRow }) {
         </div>
       </div>
 
-      {logging && (
-        <div className="mt-3 space-y-2.5 rounded-xl border border-border bg-background p-3.5">
-          <Label htmlFor={`note-${loan.id}`}>What did you tell them? (optional)</Label>
-          <textarea
-            id={`note-${loan.id}`}
-            value={note}
-            rows={3}
-            autoFocus
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Still in underwriting, expecting conditions Thursday. Nothing needed from them."
-            className="w-full rounded-[10px] border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed outline-none transition-colors focus:border-primary/40"
+      {panel === "draft" && (
+        <UpdateDraft loanId={loan.id} mode="weekly" onDone={() => setPanel(null)} />
+      )}
+
+      {panel === "handoff" && (
+        <>
+          <label className="mt-3 flex items-center gap-2 text-[13px] font-medium">
+            <input
+              type="checkbox"
+              checked={construction}
+              onChange={(e) => setConstruction(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            Construction involved
+          </label>
+          <UpdateDraft
+            loanId={loan.id}
+            mode="handoff"
+            construction={construction}
+            onDone={() => setPanel(null)}
           />
-          <p className="text-[12px] text-muted">
-            Saved to {loan.lenderName ?? "the lender"}&apos;s timeline, and it counts as a touch.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              size="touch"
-              onClick={() => run(() => logLoanUpdate(loan.id, note))}
-              disabled={pending}
-            >
-              {pending ? "Saving…" : "Log it"}
-            </Button>
-            <Button size="touch" variant="quiet" onClick={() => setLogging(false)} disabled={pending}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+        </>
       )}
 
       {error && <p className="mt-2 text-[13px] text-danger">{error}</p>}

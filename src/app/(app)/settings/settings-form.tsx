@@ -11,7 +11,7 @@ export function SettingsForm({
   profile,
   prefs,
 }: {
-  profile: { display_name: string; home_city: string; email: string };
+  profile: { display_name: string; home_city: string; email: string; email_signature: string };
   prefs: {
     default_contact_goal_days: number;
     contact_grace_days: number;
@@ -38,6 +38,7 @@ export function SettingsForm({
         updateProfile({
           display_name: String(f.get("display_name") ?? ""),
           home_city: String(f.get("home_city") ?? ""),
+          email_signature: String(f.get("email_signature") ?? ""),
         }),
         updatePreferences({
           default_contact_goal_days: Number(f.get("goal_days")),
@@ -76,6 +77,22 @@ export function SettingsForm({
               <Label htmlFor="home_city">Home base</Label>
               <Input id="home_city" name="home_city" defaultValue={profile.home_city} />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="email_signature">Email signature</Label>
+            <textarea
+              id="email_signature"
+              name="email_signature"
+              rows={4}
+              defaultValue={profile.email_signature}
+              placeholder={"Brandon Toynbee\nBusiness Development Officer\nInterMountain Business Lending\n(801) 555-0100"}
+              className="w-full rounded-[10px] border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed outline-none transition-colors focus:border-primary/40"
+            />
+            <FieldHint>
+              Signs off the first loan-update email on each loan. After that, each week starts from
+              what you sent last week, so edits carry forward on their own.
+            </FieldHint>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
