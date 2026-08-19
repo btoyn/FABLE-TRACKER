@@ -252,10 +252,10 @@ export function RelationshipMomentum({ coverage, loans, meetings, split }: Momen
                 )}
                 {loans.dueNow > 0 ? (
                   <Link
-                    href="/follow-ups"
+                    href="/loans"
                     className="mt-2.5 inline-flex h-11 items-center gap-1.5 rounded-[10px] bg-gold px-3.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#b47d16] sm:h-8 sm:px-3"
                   >
-                    Draft {loans.dueNow} update{loans.dueNow === 1 ? "" : "s"}
+                    {loans.dueNow} update{loans.dueNow === 1 ? "" : "s"} due
                   </Link>
                 ) : (
                   <p className="mt-2.5 text-[11.5px] font-semibold text-teal">

@@ -25,8 +25,8 @@ export default async function TrashPage() {
     { table: "tasks", typeLabel: "Task", select: "id, title, deleted_at", label: (r) => String(r.title) },
     { table: "promises", typeLabel: "Promise", select: "id, description, deleted_at", label: (r) => String(r.description) },
     { table: "meetings", typeLabel: "Meeting", select: "id, title, deleted_at", label: (r) => String(r.title) },
-    { table: "opportunities", typeLabel: "Referral", select: "id, borrower_name, deleted_at", label: (r) => String(r.borrower_name) },
-    { table: "active_loans", typeLabel: "Active loan", select: "id, borrower_name, deleted_at", label: (r) => String(r.borrower_name) },
+    { table: "opportunities", typeLabel: "Look", select: "id, borrower_name, deleted_at", label: (r) => String(r.borrower_name ?? "Unnamed look") },
+    { table: "active_loans", typeLabel: "Active loan", select: "id, borrower_name, deleted_at", label: (r) => String(r.borrower_name ?? "Unnamed look") },
   ];
 
   const results = await Promise.all(

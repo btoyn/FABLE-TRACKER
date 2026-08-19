@@ -59,6 +59,8 @@ export interface NavCounts {
   needsAttention: number;
   /** Active loans whose weekly update is due or late. */
   loansDue: number;
+  /** Open looks from lenders whose follow-up is due or late. */
+  looksDue: number;
 }
 
 /**
@@ -72,8 +74,16 @@ export async function getNavCounts(): Promise<NavCounts> {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [openPromises, openTasks, wokenTasks, loansDue, { data: lenders }, { data: coverage }, prefs] =
-    await Promise.all([
+  const [
+    openPromises,
+    openTasks,
+    wokenTasks,
+    loansDue,
+    looksDue,
+    { data: lenders },
+    { data: coverage },
+    prefs,
+  ] = await Promise.all([
       supabase
         .from("promises")
         .select("id", { count: "exact", head: true })
@@ -96,6 +106,14 @@ export async function getNavCounts(): Promise<NavCounts> {
         .select("id", { count: "exact", head: true })
         .eq("updates_active", true)
         .lte("next_update_due_at", today)
+        .is("deleted_at", null),
+      // Looks a lender raised that are owed a reply. Anything not explicitly
+      // closed still counts as open — see isLookOpen in @/lib/looks.
+      supabase
+        .from("opportunities")
+        .select("id", { count: "exact", head: true })
+        .not("stage", "in", "(handed_off,dormant,closed_no_handoff)")
+        .lte("next_follow_up_at", today)
         .is("deleted_at", null),
       supabase.from("lenders").select("id, active").is("deleted_at", null),
       supabase.from("lender_coverage").select("*"),
@@ -129,6 +147,7 @@ export async function getNavCounts(): Promise<NavCounts> {
     followUps: (openPromises.count ?? 0) + (openTasks.count ?? 0) + (wokenTasks.count ?? 0),
     needsAttention,
     loansDue: loansDue.count ?? 0,
+    looksDue: looksDue.count ?? 0,
   };
 }
 

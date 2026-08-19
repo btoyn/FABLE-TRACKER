@@ -137,6 +137,30 @@ relationship warm are the same act, so the app treats them as one.
 Press **Done** when the deal no longer needs updates. Nothing disappears — it moves to *No longer
 tracking*, and you can put it back.
 
+## When a lender mentions a deal
+
+**Looks** in the sidebar. Any time a lender brings up a possible deal — a real referral, a question
+about whether something would qualify, a vague *"I might have one for you"* — log it. Pick who
+brought it up, type what they asked, done. **A borrower name is optional**, because most of the time
+there isn't one yet.
+
+It comes back for a follow-up after 3 days (change that in Settings). Miss it and it goes gold, then
+red after a week, the same colours the loan clock uses.
+
+| Button | What it does |
+|---|---|
+| **Followed up** | Logs what you told them, counts as a touch, sets the next follow-up |
+| **Became a loan** | Stops the clock. Add it on *Loan updates* to start the weekly cadence |
+| **✕** | Went nowhere. Optional reason, clock stops, record stays |
+
+Logging a look **counts as a personal touch** — a lender who just brought you a deal shouldn't show
+up as needing attention the next morning.
+
+Two things fall out of this for free. **Who's reaching out** ranks your lenders by how many looks
+they've brought you, and each profile shows a **Looks given** count. That's the closest thing here to
+an honest answer about which relationships produce and which are all lunch and no loans — the
+original plan called it the one number worth measuring.
+
 ## As it happens — the four habits
 
 **Log the touch.** Profile → *Log activity*: what happened, when, one line of summary. Tick *they
@@ -213,6 +237,8 @@ offers to clear it first, so demo and real lenders never mix.
 | Log a call I just had | Profile → Log activity → Call |
 | Add a lender | Add, or Lenders → New. Checks duplicates as you type. |
 | Record something I owe | Profile → Add promise → I promised → due date |
+| Log a deal a lender mentioned | Looks → Log a look. Borrower name optional. |
+| See who actually sends me deals | Looks → Who's reaching out |
 | See who's slipping | Needs Attention, or the Overdue band on the status bar |
 | Plan a St. George trip | Needs Attention → territory Southern Utah |
 | Ask someone to lunch | Schedule on their row, or Propose a meeting on their profile |
@@ -224,6 +250,7 @@ offers to clear it first, so demo and real lenders never mix.
 | Undo a deletion | Trash → Restore (90 days) |
 | Get my data out | Settings → Export your data |
 | Change the 30-day goal | Settings → Contact goal and grace |
+| Change the look follow-up delay | Settings → Follow up on a look after |
 
 ## What's live
 
@@ -237,20 +264,20 @@ So you don't hunt for a screen that isn't built.
 | Meetings | Working | Notes, brief status |
 | Proposing a meeting | Working | Suggests dates, writes the ask, tracks the reply |
 | Loan update tracking | Working | Add loans, weekly touch, logging with a note |
+| Looks from lenders | Working | Log a mention, follow-up clock, who's reaching out |
 | Import, export, trash, audit | Working | Full wizard, 90-day restore |
 | AI drafting in your voice | Needs key | Anthropic, a few dollars a month. Today it powers *Ask assistant* and nothing else. |
 | Daily digest by email | Needs key | Resend. The summary shows in the app either way. |
 | Real Outlook drafts & calendar | Needs IT | Microsoft 365 registration and admin consent at IMBL |
 | Your writing voice | Not built | Storage ready; needs the screen to paste samples |
-| Referral & deal tracking | Not built | Follow-up logic written and tested; no screen |
 | Campaigns | Not built | Storage ready; no screen, no sending |
 | Trip planning | Not built | Shows in the rail if a trip exists; can't create one |
 | Meeting briefs | Not built | Status shown; nothing generates them |
 | Expenses, reports, drop-offs | Not built | Storage ready; no screens |
 
 None of the "not built" items are hard — mostly screens over tables that already exist. The two worth
-doing first are the voice screen and the annual goal, since both improve something you already look
-at daily.
+doing first are the voice screen and the monthly SBA update, since one improves every draft and the
+other is the only touch that gives a banker something instead of asking for their time.
 
 ## What it takes to stop pasting
 

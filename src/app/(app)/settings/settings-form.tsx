@@ -18,6 +18,7 @@ export function SettingsForm({
     weekly_top_count: number;
     weekly_on_deck_count: number;
     default_campaign_batch_size: number;
+    look_follow_up_days: number;
     daily_digest_enabled: boolean;
     daily_digest_time: string;
   };
@@ -44,6 +45,7 @@ export function SettingsForm({
           weekly_top_count: Number(f.get("top_count")),
           weekly_on_deck_count: Number(f.get("on_deck_count")),
           default_campaign_batch_size: Number(f.get("batch_size")),
+          look_follow_up_days: Number(f.get("look_days")),
           daily_digest_enabled: f.get("digest_enabled") === "on",
           daily_digest_time: String(f.get("digest_time") ?? "08:00"),
         }),
@@ -114,6 +116,23 @@ export function SettingsForm({
             <div>
               <Label htmlFor="batch_size">Campaign batch size</Label>
               <Input id="batch_size" name="batch_size" type="number" min={5} max={100} defaultValue={prefs.default_campaign_batch_size} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="look_days">Follow up on a look after</Label>
+              <Input
+                id="look_days"
+                name="look_days"
+                type="number"
+                min={1}
+                max={30}
+                defaultValue={prefs.look_follow_up_days}
+              />
+              <FieldHint>
+                Days before a lender&apos;s possible deal comes back for a reply.
+              </FieldHint>
             </div>
           </div>
 

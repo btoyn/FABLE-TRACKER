@@ -42,6 +42,7 @@ export default async function SettingsPage() {
             weekly_top_count: prefs?.weekly_top_count ?? 10,
             weekly_on_deck_count: prefs?.weekly_on_deck_count ?? 10,
             default_campaign_batch_size: prefs?.default_campaign_batch_size ?? 25,
+            look_follow_up_days: prefs?.look_follow_up_days ?? 3,
             daily_digest_enabled: prefs?.daily_digest_enabled ?? true,
             daily_digest_time: (prefs?.daily_digest_time ?? "08:00").slice(0, 5),
           }}
@@ -131,7 +132,7 @@ export default async function SettingsPage() {
               ["activities", "Activities"],
               ["tasks", "Tasks"],
               ["promises", "Promises"],
-              ["opportunities", "Referrals"],
+              ["opportunities", "Looks"],
               ["active_loans", "Active loans"],
             ].map(([key, label]) => (
               <a

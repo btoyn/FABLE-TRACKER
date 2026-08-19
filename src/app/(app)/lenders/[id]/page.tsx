@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { getPreferences } from "@/lib/data";
 import { lenderCoverage } from "@/lib/coverage";
+import { LOOK_STAGE, isLookOpen, lookTitle } from "@/lib/looks";
 import {
   ACTIVITY_TYPE_LABELS,
   HEALTH_LABELS,
@@ -81,12 +82,13 @@ export default async function LenderProfilePage({
       .is("deleted_at", null)
       .order("due_at"),
     supabase.from("active_loans").select("*").eq("lender_id", id).is("deleted_at", null),
+    // Every look, closed ones included — the lifetime count is the point.
     supabase
       .from("opportunities")
       .select("*")
       .eq("lender_id", id)
       .is("deleted_at", null)
-      .not("stage", "in", "(handed_off,closed_no_handoff)"),
+      .order("received_at", { ascending: false }),
     supabase
       .from("meeting_attendees")
       .select("meeting:meetings(id, title, start_at, status, location_name)")
@@ -112,6 +114,13 @@ export default async function LenderProfilePage({
   );
 
   const lastActivity = activities?.[0] ?? null;
+
+  // Looks: the lifetime count is what says whether this relationship produces;
+  // the open ones are what still needs a reply.
+  const openLooks = (opportunities ?? []).filter((o) => isLookOpen(o.stage));
+  const becameLoans = (opportunities ?? []).filter(
+    (o) => o.stage === LOOK_STAGE.becameLoan,
+  ).length;
 
   const nextMeeting = (upcomingMeetings ?? [])
     .map((r) => r.meeting as unknown as { id: string; title: string; start_at: string; status: string; location_name: string | null })
@@ -222,10 +231,24 @@ export default async function LenderProfilePage({
               )}
               {(opportunities ?? []).length > 0 && (
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted">Early referrals</p>
-                  {(opportunities ?? []).map((o) => (
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                    Looks given
+                  </p>
+                  <p className="mt-0.5 text-sm">
+                    <Link href="/looks" className="font-semibold text-primary hover:underline">
+                      {(opportunities ?? []).length}
+                    </Link>{" "}
+                    <span className="text-muted">
+                      {becameLoans > 0
+                        ? `· ${becameLoans} became a loan`
+                        : openLooks.length > 0
+                          ? `· ${openLooks.length} still open`
+                          : "· none open"}
+                    </span>
+                  </p>
+                  {openLooks.map((o) => (
                     <p key={o.id} className="mt-0.5 text-sm">
-                      {o.borrower_name} · {o.stage.replace(/_/g, " ")}
+                      {lookTitle({ borrowerName: o.borrower_name, notes: o.notes })}
                     </p>
                   ))}
                 </div>

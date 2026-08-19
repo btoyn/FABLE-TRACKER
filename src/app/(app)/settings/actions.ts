@@ -10,6 +10,7 @@ export async function updatePreferences(fields: {
   weekly_top_count: number;
   weekly_on_deck_count: number;
   default_campaign_batch_size: number;
+  look_follow_up_days: number;
   daily_digest_enabled: boolean;
   daily_digest_time: string;
 }): Promise<{ error?: string }> {
