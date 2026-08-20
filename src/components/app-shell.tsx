@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickLog } from "@/components/quick-log";
+import { BasecampLockup } from "@/components/brand";
 import type { NavCounts, QuickLogData } from "@/lib/data";
 
 /** Import lives in Settings, not primary navigation. */
@@ -58,7 +59,7 @@ function badgeTone(
   if (kind === "needsAttention") return "bg-danger-soft text-[#a8434a]";
   // A loan update or a look owed a reply is time-sensitive but not yet a problem.
   if (kind === "loansDue" || kind === "looksDue") return "bg-gold-soft text-[#8a6215]";
-  return count > 5 ? "bg-gold-soft text-[#8a6215]" : "bg-primary-soft text-[#2a49b4]";
+  return count > 5 ? "bg-gold-soft text-[#8a6215]" : "bg-primary-soft text-[#1a4ad9]";
 }
 
 function NavLink({
@@ -83,8 +84,8 @@ function NavLink({
       className={cn(
         "group flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13.5px] font-medium transition-all duration-150",
         active
-          ? "bg-primary text-white shadow-[0_2px_8px_rgba(49,87,213,0.3)]"
-          : "text-[#2c3852] hover:bg-primary-soft hover:text-primary",
+          ? "bg-primary text-white shadow-[0_2px_8px_rgba(30,91,255,0.3)]"
+          : "text-[#25324c] hover:bg-primary-soft hover:text-primary",
       )}
     >
       <Icon className="h-[17px] w-[17px] shrink-0" />
@@ -153,18 +154,15 @@ export function AppShell({
     <div className="flex min-h-screen w-full">
       {/* Light sidebar, primary navigation grouped away from utilities */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 md:flex">
-        <Link href="/dashboard" className="mb-5 flex items-center gap-2.5 px-1.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-[13px] font-bold text-white shadow-[0_2px_6px_rgba(49,87,213,0.32)]">
-            LC
-          </span>
-          <span className="text-[15px] font-semibold tracking-[-0.01em]">Lender CRM</span>
+        <Link href="/dashboard" className="mb-5 flex items-center px-1.5">
+          <BasecampLockup size={16} />
         </Link>
 
         <QuickLog data={quickLog}>
           {(open) => (
             <button
               onClick={open}
-              className="mb-4 flex h-10 items-center justify-center gap-2 rounded-[10px] bg-primary text-[13.5px] font-semibold text-white shadow-[0_2px_8px_rgba(49,87,213,0.28)] transition-all duration-150 hover:bg-primary-hover active:translate-y-px"
+              className="mb-4 flex h-10 items-center justify-center gap-2 rounded-[10px] bg-primary text-[13.5px] font-semibold text-white shadow-[0_2px_8px_rgba(30,91,255,0.28)] transition-all duration-150 hover:bg-primary-hover active:translate-y-px"
             >
               <Phone className="h-4 w-4" />
               Log a call
@@ -218,7 +216,7 @@ export function AppShell({
               aria-label="Log a call"
               className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-primary transition-colors active:bg-primary-soft"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-[0_2px_6px_rgba(49,87,213,0.35)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-[0_2px_6px_rgba(30,91,255,0.35)]">
                 <Phone className="h-4 w-4" />
               </span>
               Log

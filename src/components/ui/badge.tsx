@@ -10,7 +10,7 @@ const badgeVariants = cva(
       variant: {
         /* Pill text runs a shade darker than the pure semantic hue — the brand
            values sit near 3:1 on their own tints, which is thin for 12px type. */
-        default: "bg-primary-soft text-[#2a49b4]",
+        default: "bg-primary-soft text-[#1a4ad9]",
         success: "bg-teal-soft text-[#1f6b60]",
         warning: "bg-gold-soft text-[#8a6215]",
         danger: "bg-danger-soft text-[#a8434a]",
@@ -19,7 +19,7 @@ const badgeVariants = cva(
 
         /* Pale pill set: overdue timing, meeting type, territory, pending, planning, personal */
         overdue: "bg-danger-soft text-[#a8434a]",
-        meeting: "bg-primary-soft text-[#2a49b4]",
+        meeting: "bg-primary-soft text-[#1a4ad9]",
         territory: "bg-[#eef1f7] text-[#59678a]",
         pending: "bg-gold-soft text-[#8a6215]",
         planning: "bg-gold-soft text-[#8a6215]",

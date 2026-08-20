@@ -48,7 +48,7 @@ export interface RelationshipRow {
 }
 
 const CHIP_TONE: Record<ReasonChip["tone"], string> = {
-  blue: "bg-primary-soft text-[#2a49b4]",
+  blue: "bg-primary-soft text-[#1a4ad9]",
   gold: "bg-gold-soft text-[#8a6215]",
   red: "bg-danger-soft text-[#a8434a]",
   teal: "bg-teal-soft text-[#1f6b60]",
@@ -116,7 +116,7 @@ export function RelationshipRows({
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-primary/10">
               <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,#3157d5_0%,#5b7ce6_100%)] transition-[width] duration-500"
+                className="h-full rounded-full bg-[linear-gradient(90deg,#1e5bff_0%,#5b7ce6_100%)] transition-[width] duration-500"
                 style={{ width: `${Math.min(100, pct)}%` }}
               />
             </div>

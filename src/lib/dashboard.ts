@@ -186,7 +186,7 @@ export function buildCoverageSplit(lenders: LenderWithCoverage[]): CoverageSplit
       label: "Personal",
       count: tally.personal,
       href: "/lenders?view=on_track",
-      color: "#3157d5",
+      color: "#1e5bff",
       hint: "One-to-one contact inside the goal window",
     },
     {
@@ -194,7 +194,7 @@ export function buildCoverageSplit(lenders: LenderWithCoverage[]): CoverageSplit
       label: "Campaign only",
       count: tally.campaign,
       href: "/needs-attention?f=campaign_only",
-      color: "#c88d20",
+      color: "#9a6f14",
       hint: "Reached by campaign email, never personally",
     },
     {

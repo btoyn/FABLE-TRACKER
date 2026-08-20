@@ -1,4 +1,4 @@
-# Lender CRM
+# Basecamp
 
 A personal lender relationship and communication command center for an SBA 504
 Business Development Officer. Built from `lender_crm_build_spec.md`.

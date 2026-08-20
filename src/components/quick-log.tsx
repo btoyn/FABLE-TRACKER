@@ -263,7 +263,7 @@ function Sheet({ data, onClose }: { data: QuickLogData; onClose: () => void }) {
                               {lender.name}
                             </span>
                             {lender.onThisWeeksList && (
-                              <span className="shrink-0 rounded-full bg-primary-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#2a49b4]">
+                              <span className="shrink-0 rounded-full bg-primary-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#1a4ad9]">
                                 This week
                               </span>
                             )}

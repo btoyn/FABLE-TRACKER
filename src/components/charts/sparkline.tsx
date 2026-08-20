@@ -64,15 +64,15 @@ export function Sparkline({
     >
       <defs>
         <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3157d5" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="#3157d5" stopOpacity="0" />
+          <stop offset="0%" stopColor="#1e5bff" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#1e5bff" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={area} fill="url(#spark-fill)" />
       <path
         d={line}
         fill="none"
-        stroke="#3157d5"
+        stroke="#1e5bff"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -83,7 +83,7 @@ export function Sparkline({
         cy={last.y}
         r="2.8"
         fill="#ffffff"
-        stroke="#3157d5"
+        stroke="#1e5bff"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
       />

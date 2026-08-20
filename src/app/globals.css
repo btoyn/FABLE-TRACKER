@@ -1,28 +1,38 @@
 @import "tailwindcss";
 
-/* Alpine Editorial theme — light mode only. Color carries meaning here:
-   royal blue for relationship activity and primary actions, sunrise gold for
-   pending work, alpine teal for confirmed and healthy, muted plum for personal
-   relationship intelligence, critical red for blocked or seriously overdue. */
+/* Basecamp theme — light mode only. Color carries meaning here: royal blue for
+   relationship activity and primary actions, sunrise gold for pending work,
+   alpine teal for confirmed and healthy, muted plum for personal relationship
+   intelligence, critical red for blocked or seriously overdue.
+
+   The three --brand-* values are the logo's own colors and must not drift; the
+   interface tokens below are derived from them. Teal, plum and red are not in
+   the brand palette on purpose — they carry status meaning, not identity, and a
+   three-color palette cannot express five states. */
 :root {
+  --brand-navy: #0b1d3a;
+  --brand-blue: #1e5bff;
+  --brand-gold: #f2b94b;
+
   --background: #f5f7fb;
   --surface: #ffffff;
-  --foreground: #182338;
-  --muted: #62708a;
-  --border: #e5eaf3;
+  --foreground: #101c33;
+  --muted: #5f6d87;
+  --border: #e4e9f2;
 
-  --primary: #3157d5;
-  --primary-hover: #2848b8;
-  --primary-soft: #eef3ff;
+  --primary: #1e5bff;
+  --primary-hover: #1546d6;
+  --primary-soft: #ecf2ff;
   --primary-foreground: #ffffff;
 
-  --navy: #1a2f63;
-  --navy-soft: #e8ecf6;
+  --navy: #0b1d3a;
+  --navy-soft: #e6eaf2;
 
-  /* Sunrise gold — due soon, pending, needs attention */
-  --gold: #c88d20;
-  --gold-soft: #fff5df;
-  --gold-border: #f0e2c4;
+  /* Sunrise gold — due soon, pending, needs attention. Darkened from the brand
+     gold for text and icons, which need contrast the logo tint cannot give. */
+  --gold: #9a6f14;
+  --gold-soft: #fdf4e2;
+  --gold-border: #f2e3c2;
 
   /* Alpine teal — confirmed, completed, healthy */
   --teal: #278477;
@@ -46,13 +56,13 @@
   --warning-soft: var(--gold-soft);
 
   /* Sidebar chrome */
-  --sidebar: #f1f4fa;
-  --sidebar-border: #e3e9f3;
+  --sidebar: #f0f3fa;
+  --sidebar-border: #e2e8f3;
 
   /* Hero gradient */
-  --banner-from: #1a2f63;
-  --banner-via: #2a4bb4;
-  --banner-to: #3157d5;
+  --banner-from: #0b1d3a;
+  --banner-via: #123a8f;
+  --banner-to: #1e5bff;
 }
 
 @theme inline {
@@ -65,6 +75,9 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-gold: var(--brand-gold);
   --color-navy: var(--navy);
   --color-navy-soft: var(--navy-soft);
   --color-gold: var(--gold);

@@ -369,7 +369,7 @@ function Sheet({ lenderId, onClose }: { lenderId: string; onClose: () => void })
                 href={mailto}
                 onClick={() => persist(true)}
                 className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary px-4 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(49,87,213,0.3)] transition-colors hover:bg-primary/90",
+                  "inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary px-4 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(30,91,255,0.3)] transition-colors hover:bg-primary/90",
                   (pending || slots.length === 0) && "pointer-events-none opacity-50",
                 )}
               >

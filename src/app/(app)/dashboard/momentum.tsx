@@ -67,7 +67,7 @@ function ContourTexture() {
         <path
           key={offset}
           d={`M-40 ${250 - offset} C 140 ${218 - offset}, 250 ${276 - offset}, 430 ${242 - offset} S 700 ${186 - offset}, 880 ${226 - offset} S 1120 ${266 - offset}, 1240 ${210 - offset}`}
-          stroke="#1a2f63"
+          stroke="#0b1d3a"
           strokeWidth={i % 3 === 0 ? 1.6 : 1}
         />
       ))}
@@ -139,7 +139,7 @@ export function RelationshipMomentum({ coverage, loans, meetings, split }: Momen
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(700px 280px at 88% -14%, rgba(200,141,32,0.13) 0%, rgba(200,141,32,0.05) 42%, rgba(200,141,32,0) 72%)",
+              "radial-gradient(700px 280px at 88% -14%, rgba(242,185,75,0.13) 0%, rgba(242,185,75,0.05) 42%, rgba(242,185,75,0) 72%)",
           }}
         />
 

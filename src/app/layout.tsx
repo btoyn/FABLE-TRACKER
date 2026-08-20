@@ -13,18 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Lender CRM", template: "%s · Lender CRM" },
+  title: { default: "Basecamp", template: "%s · Basecamp" },
   description: "Personal lender relationship and communication command center",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Lender CRM",
+    title: "Basecamp",
     statusBarStyle: "default",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2b4fc2",
+  themeColor: "#1e5bff",
   width: "device-width",
   initialScale: 1,
 };

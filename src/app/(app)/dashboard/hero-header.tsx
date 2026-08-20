@@ -102,7 +102,7 @@ export function HeroHeader({
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(100deg, rgba(20,35,74,0.96) 0%, rgba(22,40,92,0.92) 30%, rgba(43,76,190,0.66) 56%, rgba(49,87,213,0.26) 78%, rgba(49,87,213,0.06) 100%)",
+              "linear-gradient(100deg, rgba(20,35,74,0.96) 0%, rgba(22,40,92,0.92) 30%, rgba(43,76,190,0.66) 56%, rgba(30,91,255,0.26) 78%, rgba(30,91,255,0.06) 100%)",
           }}
         />
         {/* A touch of warmth pulled from the sunrise, kept very low */}
