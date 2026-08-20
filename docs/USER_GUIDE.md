@@ -1,7 +1,8 @@
 # Basecamp — Working Guide
 
-One system for ~120 commercial lenders. It answers one question — *who is slipping?* — in five
-minutes a day. Live at `fable-tracker.vercel.app`.
+One system for your ~140 commercial lenders across Salt Lake City and St. George. It answers one
+question — *who is slipping?* — in five minutes a day. Your real list is loaded; this is not a demo.
+Live at `fable-tracker.vercel.app`.
 
 This file is the single source for the guide: it renders inside the app at **Guide** in the sidebar,
 and reads as plain markdown on GitHub. Editing it updates both.
@@ -328,14 +329,28 @@ Today the reading is ordinary code, so anything it isn't certain about comes to 
 behavior but it's a low bar: *"I'm slammed that week but the following Tuesday could work if it's
 early"* is a perfectly clear answer to a human and this bounces it back.
 
-With the key, replies like that get handled instead of interrupting you. Roughly $4/month at your
-volume. This is independent of the mailbox question and improves both the current version and the
-automatic one.
+With the key, replies like that get handled instead of interrupting you. This is independent of the
+mailbox question and improves both the current version and the automatic one.
+
+**This is a smaller ask than it used to be.** IMBL already pays Anthropic — roughly $350 a month
+across five Claude seats — so this is a key on an account we already hold, not a new vendor. Billed
+per use, a few dollars a month at your volume.
 
 ### Both are needed
 
 The key removes the *interruptions*. The mailbox removes the *paste*. Neither alone gets to hands-off
 scheduling — plan for both.
+
+### Meanwhile: Claude in Outlook is already approved
+
+IT has deployed the Claude add-in for Outlook, which is a different thing from the items above — it
+sits in the Outlook sidebar, for you, and Basecamp cannot talk to it. But it is useful today. Open a
+lender's reply and ask it what they are proposing; ask it to draft the lunch email in your voice. You
+still move the text across by hand, so it does not remove the paste — it just means the drafting and
+reading you want are available now rather than after the approvals land.
+
+It also means the Anthropic relationship is already in place, which is why the key above is a small
+ask.
 
 ### 3. Calendar access — removes the double-checking
 
@@ -345,9 +360,20 @@ lets it send the actual meeting invitation once a date is agreed.
 
 ## Loose ends
 
-1. **Add the redirect addresses in Supabase** (Authentication → URL Configuration), with the
-   `https://` prefix. Until then *Forgot password* fails; signing in normally already works.
-2. **Set your availability** in Settings → *When you can meet*. Nothing suggests dates until you do.
+1. **Fix the Site URL in Supabase** (Authentication → URL Configuration). This is a different field
+   from the redirect list and is almost certainly still `http://localhost:3000`. It is the address
+   Supabase builds confirmation and password-reset links from, so until it points at
+   `https://fable-tracker.vercel.app` those emails lead nowhere — which is what broke the login link
+   sent to a coworker. Add the redirect addresses on the same screen while you are there, with the
+   `https://` prefix.
+2. **Set your availability** in Settings → *When you can meet*. All five rows are empty, so nothing
+   suggests dates until you fill them in. Lunch, breakfast and office visits are the three you use.
+3. **Add your email signature** in Settings → *Email signature*. It is blank, so the first
+   loan-update draft on each loan has no sign-off. After the first one your own text carries forward,
+   so this is a one-time thing.
+4. **Twelve lenders have no email address.** They cannot receive a meeting proposal or a loan update
+   — the draft screen says so rather than sending something broken. Worth filling in as you come
+   across them.
 
 Done: the Vercel login wall is off, so the site opens normally on any device and can be installed
 to your home screen.
