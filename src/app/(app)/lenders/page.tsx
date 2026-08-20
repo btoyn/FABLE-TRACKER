@@ -9,8 +9,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { getLendersWithCoverage, type LenderWithCoverage } from "@/lib/data";
 import { matchScore } from "@/lib/fuzzy";
+import { groupLenders } from "@/lib/lender-groups";
 import { cn } from "@/lib/utils";
 import { TIER_LABELS } from "@/lib/labels";
+import { GroupedLenderList, type GroupedLender } from "./grouped-list";
 
 export const metadata = { title: "Lenders" };
 
@@ -90,9 +92,9 @@ function applyView(
 export default async function LendersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; view?: string }>;
+  searchParams: Promise<{ q?: string; view?: string; layout?: string }>;
 }) {
-  const { q, view = "all" } = await searchParams;
+  const { q, view = "all", layout = "grouped" } = await searchParams;
   const [lenders, sets] = await Promise.all([getLendersWithCoverage(), getViewSets()]);
 
   let list = applyView(lenders, view, sets);
@@ -112,6 +114,32 @@ export default async function LendersPage({
       .map((x) => x.lender);
   }
 
+  // A search is ranked by how well each name matched, and grouping would discard
+  // that order — so searching always shows the flat list.
+  const grouped = layout === "grouped" && !q;
+
+  const rows: GroupedLender[] = list.map((l) => ({
+    id: l.id,
+    fullName: l.full_name,
+    title: l.title,
+    institution: l.institution?.name ?? null,
+    territory: l.territory,
+    isSample: l.is_sample,
+    tier: l.relationship_tier,
+    daysSincePersonal: l.coverage.daysSincePersonal,
+    daysSinceVisible: l.coverage.daysSinceVisible,
+    coverageStatus: l.coverage.personal,
+  }));
+
+  const sections = grouped
+    ? groupLenders(rows, (l) => ({
+        territory: l.territory,
+        institution: l.institution,
+        needsAttention: l.coverageStatus !== "on_track",
+        daysSinceTouch: l.daysSinceVisible,
+      }))
+    : [];
+
   return (
     <>
       <PageHeader
@@ -128,13 +156,36 @@ export default async function LendersPage({
         <Suspense>
           <SearchInput placeholder="Search by name, bank, or email…" />
         </Suspense>
+        {!q && (
+          <div className="flex overflow-hidden rounded-full border border-border">
+            {(
+              [
+                ["grouped", "By institution"],
+                ["flat", "Flat list"],
+              ] as const
+            ).map(([key, label]) => (
+              <Link
+                key={key}
+                href={`/lenders?view=${view}&layout=${key}`}
+                className={cn(
+                  "px-3 py-1 text-xs font-medium transition-colors",
+                  layout === key
+                    ? "bg-primary text-white"
+                    : "bg-surface text-muted hover:text-foreground",
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-5 flex flex-wrap gap-1.5">
         {VIEWS.map((v) => (
           <Link
             key={v.key}
-            href={`/lenders?view=${v.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+            href={`/lenders?view=${v.key}&layout=${layout}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
               view === v.key
@@ -162,6 +213,12 @@ export default async function LendersPage({
               </Link>
             ) : undefined
           }
+        />
+      ) : grouped ? (
+        <GroupedLenderList
+          sections={sections}
+          /* A narrowed view is already short; collapsing it would hide the answer. */
+          startExpanded={view !== "all"}
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-surface">

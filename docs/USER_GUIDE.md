@@ -206,8 +206,21 @@ stays in their history, and the app flags it, since that branch may now need a r
 
 ## Finding people
 
-**Lenders** has typo-tolerant search across names, banks, and emails (*Whitfeild* finds Whitfield)
-plus one-click views:
+**Lenders** opens grouped by territory, then by bank — collapsed, so you see about twenty headers
+instead of a hundred and forty names. Each header carries the count, when anyone there was last
+touched, and how many are slipping, so a healthy bank can be skipped without opening it. Banks with
+people in both territories appear under each one separately, because you visit them on different
+trips.
+
+Groups are ordered worst-first inside each territory: the bank with the most people slipping sits at
+the top. *Expand all* opens everything, and **Flat list** switches back to one long list if you
+prefer it. Picking a view expands the groups automatically, since the list is already short by then.
+
+Search always shows the flat list — results are ranked by how well each name matched, and grouping
+would throw that order away.
+
+It has typo-tolerant search across names, banks, and emails (*Whitfeild* finds Whitfield) plus
+one-click views:
 
 | View | Who's in it |
 |---|---|
