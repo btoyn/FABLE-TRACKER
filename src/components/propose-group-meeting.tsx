@@ -1,25 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CalendarPlus, Check, Copy, Mail, Settings2, UserPlus, X } from "lucide-react";
+import { CalendarPlus, Check, Copy, Mail, Settings2, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { GroupProposalSheet } from "@/components/propose-group-meeting";
-import { describeSlot, draftProposalEmail, findOpenSlots } from "@/lib/scheduling";
+import { describeSlot, findOpenSlots } from "@/lib/scheduling";
+import { draftGroupProposalEmail, formatNameList } from "@/lib/group-proposal";
 import { MEETING_TYPE_DURATIONS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import { getProposalContext, saveProposal } from "@/app/(app)/scheduling/actions";
-import type { ProposalContext } from "@/app/(app)/scheduling/actions";
+import {
+  getGroupProposalContext,
+  saveGroupProposal,
+  type GroupProposalContext,
+} from "@/app/(app)/scheduling/group-actions";
 
 /**
- * "Propose lunch" — the screen behind the button on every lender (spec §15).
+ * Taking a bank's team to lunch.
  *
- * Dates are worked out here rather than on the server because availability is
- * wall-clock ("lunches 11 to 1") and the browser is the only place that knows
- * which wall clock he's on. Everything sent to the server is an absolute
- * instant.
+ * The same shape as the single-lender sheet — dates worked out here in his own
+ * wall clock, one draft he proofs, nothing sent by the app — with a picker on
+ * the front. Nobody is ticked to begin with: some of these banks have a dozen
+ * people and inviting all of them is not the idea.
  */
 
 const TYPES = [
@@ -30,80 +33,33 @@ const TYPES = [
   { value: "general", label: "Other" },
 ] as const;
 
-export function ProposeMeeting({
-  lenderId,
-  children,
-}: {
-  lenderId: string;
-  children: (open: () => void) => React.ReactNode;
-}) {
-  // The group sheet is the same ask with more people on it, so it opens from
-  // here rather than sending him somewhere else to start again.
-  const [mode, setMode] = useState<"closed" | "single" | "group">("closed");
-  const [groupInstitutionId, setGroupInstitutionId] = useState<string | null>(null);
-  const triggerWrap = useRef<HTMLSpanElement>(null);
-
-  function close() {
-    setMode("closed");
-    // Put focus back where it came from without reading activeElement.
-    triggerWrap.current?.querySelector<HTMLElement>("button, a")?.focus();
-  }
-
-  return (
-    <>
-      {/* display:contents keeps the caller's layout untouched */}
-      <span ref={triggerWrap} className="contents">
-        {children(() => setMode("single"))}
-      </span>
-      {mode === "single" && (
-        <Sheet
-          lenderId={lenderId}
-          onClose={close}
-          onInviteOthers={(institutionId) => {
-            setGroupInstitutionId(institutionId);
-            setMode("group");
-          }}
-        />
-      )}
-      {mode === "group" && groupInstitutionId && (
-        <GroupProposalSheet
-          institutionId={groupInstitutionId}
-          preselectLenderIds={[lenderId]}
-          onClose={close}
-        />
-      )}
-    </>
-  );
-}
-
 function toLocalInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function Sheet({
-  lenderId,
+export function GroupProposalSheet({
+  institutionId,
+  preselectLenderIds = [],
   onClose,
-  onInviteOthers,
 }: {
-  lenderId: string;
+  institutionId: string;
+  /** Already chosen elsewhere — the lender he opened the single sheet on. */
+  preselectLenderIds?: string[];
   onClose: () => void;
-  onInviteOthers: (institutionId: string) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [context, setContext] = useState<ProposalContext | null>(null);
+  const [context, setContext] = useState<GroupProposalContext | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const [selected, setSelected] = useState<string[]>(preselectLenderIds);
+  const [showAllTerritories, setShowAllTerritories] = useState(false);
   const [meetingType, setMeetingType] = useState<string>("lunch");
   const [customLabel, setCustomLabel] = useState("");
   const [locationName, setLocationName] = useState("");
-
-  // The suggested dates and wording are derived from the rules; these hold his
-  // edits and win once set. Changing the kind of meeting clears them, so the
-  // suggestion comes back rather than stale text for the wrong meeting.
   const [slotOverride, setSlotOverride] = useState<Date[] | null>(null);
   const [textOverride, setTextOverride] = useState<{ subject: string; body: string } | null>(null);
 
@@ -125,15 +81,32 @@ function Sheet({
 
   useEffect(() => {
     let alive = true;
-    getProposalContext(lenderId).then((r) => {
+    getGroupProposalContext(institutionId).then((r) => {
       if (!alive) return;
-      if (r.error || !r.context) setLoadError(r.error ?? "Could not load this lender.");
+      if (r.error || !r.context) setLoadError(r.error ?? "Could not load this institution.");
       else setContext(r.context);
     });
     return () => {
       alive = false;
     };
-  }, [lenderId]);
+  }, [institutionId]);
+
+  const territory = context?.planningTerritory ?? null;
+
+  // Everyone at the bank, but the list starts on the territory this trip is
+  // in — six banks straddle two of them and they're visited separately.
+  const visible = useMemo(() => {
+    if (!context) return [];
+    if (showAllTerritories || !territory) return context.lenders;
+    return context.lenders.filter((l) => l.territory === territory || selected.includes(l.id));
+  }, [context, showAllTerritories, territory, selected]);
+
+  const hiddenCount = (context?.lenders.length ?? 0) - visible.length;
+
+  const chosen = useMemo(
+    () => (context?.lenders ?? []).filter((l) => selected.includes(l.id)),
+    [context, selected],
+  );
 
   const rule = useMemo(
     () => context?.rules.find((r) => r.meetingType === meetingType) ?? null,
@@ -156,20 +129,31 @@ function Sheet({
 
   const draft = useMemo(
     () =>
-      context
-        ? draftProposalEmail({
-            firstName: context.lender.firstName,
-            meetingType,
-            customLabel,
-            slots,
-            daysSinceContact: context.daysSinceContact,
-          })
-        : { subject: "", body: "" },
-    [context, meetingType, customLabel, slots],
+      draftGroupProposalEmail({
+        firstNames: chosen.map((l) => l.firstName),
+        meetingType,
+        customLabel,
+        slots,
+      }),
+    [chosen, meetingType, customLabel, slots],
   );
 
   const subject = textOverride?.subject ?? draft.subject;
   const body = textOverride?.body ?? draft.body;
+
+  // One email, everyone on it, all of them visible to each other. Seeing that
+  // a peer is coming is half of why these work.
+  const mailto = `mailto:${chosen
+    .map((l) => l.email)
+    .filter(Boolean)
+    .join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  function toggle(lenderId: string) {
+    setSelected((prev) =>
+      prev.includes(lenderId) ? prev.filter((id) => id !== lenderId) : [...prev, lenderId],
+    );
+    setTextOverride(null);
+  }
 
   function chooseType(next: string) {
     setMeetingType(next);
@@ -177,16 +161,19 @@ function Sheet({
     setTextOverride(null);
   }
 
-  const mailto = context
-    ? `mailto:${context.lender.email ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    : "#";
+  function updateSlot(index: number, value: string) {
+    const next = new Date(value);
+    if (Number.isNaN(next.getTime())) return;
+    setSlotOverride(slots.map((s, i) => (i === index ? next : s)));
+  }
 
   function persist(markSent: boolean) {
     if (!context) return;
     setError(null);
     startTransition(async () => {
-      const result = await saveProposal({
-        lenderId,
+      const result = await saveGroupProposal({
+        institutionId,
+        lenderIds: selected,
         meetingType,
         customLabel: meetingType === "general" ? customLabel : null,
         offeredSlots: slots.map((s) => s.toISOString()),
@@ -204,11 +191,7 @@ function Sheet({
     });
   }
 
-  function updateSlot(index: number, value: string) {
-    const next = new Date(value);
-    if (Number.isNaN(next.getTime())) return;
-    setSlotOverride(slots.map((s, i) => (i === index ? next : s)));
-  }
+  const ready = selected.length > 0 && slots.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -222,12 +205,12 @@ function Sheet({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="propose-title"
+        aria-labelledby="group-propose-title"
         className="animate-row-settle relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[20px] border border-border bg-surface shadow-[0_20px_60px_rgba(16,24,40,0.28)] sm:max-w-[560px] sm:rounded-[20px]"
       >
         <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-          <h2 id="propose-title" className="flex-1 text-[16px] font-semibold">
-            {context ? `Propose a meeting with ${context.lender.firstName}` : "Propose a meeting"}
+          <h2 id="group-propose-title" className="flex-1 text-[16px] font-semibold">
+            {context ? `Get the ${context.institution.name} group together` : "Group meeting"}
           </h2>
           <button
             onClick={onClose}
@@ -241,26 +224,76 @@ function Sheet({
         {loadError ? (
           <p className="px-5 py-8 text-center text-[14px] text-danger">{loadError}</p>
         ) : !context ? (
-          <p className="px-5 py-8 text-center text-[14px] text-muted">Finding open dates…</p>
+          <p className="px-5 py-8 text-center text-[14px] text-muted">Loading the team…</p>
         ) : (
           <>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="flex flex-col gap-4 px-5 py-4">
-                {context.lender.institutionId && (
-                  <button
-                    type="button"
-                    onClick={() => onInviteOthers(context.lender.institutionId!)}
-                    className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-colors hover:border-primary/40 hover:bg-primary-soft/50"
-                  >
-                    <UserPlus className="h-4 w-4 shrink-0 text-primary" />
-                    <span>
-                      Invite others from {context.lender.institutionName ?? "the same bank"}
-                      <span className="block text-[12.5px] font-normal text-muted">
-                        One email to the group, {context.lender.firstName} included
-                      </span>
-                    </span>
-                  </button>
-                )}
+                {/* Who */}
+                <fieldset>
+                  <legend className="mb-1.5 text-[13px] font-medium">
+                    Who&apos;s coming?
+                    {territory && !showAllTerritories && (
+                      <span className="ml-1.5 font-normal text-muted">{territory}</span>
+                    )}
+                  </legend>
+
+                  {visible.length === 0 ? (
+                    <p className="rounded-xl border border-border bg-background px-4 py-3 text-[13px] text-muted">
+                      Nobody at this bank is in {territory}.
+                    </p>
+                  ) : (
+                    <ul className="overflow-hidden rounded-xl border border-border">
+                      {visible.map((l) => {
+                        const invitable = Boolean(l.email);
+                        const isOn = selected.includes(l.id);
+                        return (
+                          <li key={l.id} className="border-b border-border last:border-b-0">
+                            <label
+                              className={cn(
+                                "flex min-h-11 cursor-pointer items-center gap-3 px-3.5 py-2.5",
+                                isOn && "bg-primary-soft/50",
+                                !invitable && "cursor-not-allowed opacity-60",
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isOn}
+                                disabled={!invitable}
+                                onChange={() => toggle(l.id)}
+                                className="h-4 w-4 shrink-0 accent-primary"
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[14px] font-medium">
+                                  {l.fullName}
+                                </span>
+                                <span className="block truncate text-[12.5px] text-muted">
+                                  {invitable
+                                    ? [l.title, showAllTerritories ? l.territory : null]
+                                        .filter(Boolean)
+                                        .join(" · ")
+                                    : "No email address on file — can't be sent a proposal"}
+                                </span>
+                              </span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
+                  {territory && (hiddenCount > 0 || showAllTerritories) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTerritories((v) => !v)}
+                      className="mt-1.5 text-[12.5px] font-medium text-primary hover:underline"
+                    >
+                      {showAllTerritories
+                        ? `Just ${territory}`
+                        : `Show ${hiddenCount} more from other territories`}
+                    </button>
+                  )}
+                </fieldset>
 
                 <fieldset>
                   <legend className="mb-1.5 text-[13px] font-medium">What kind?</legend>
@@ -269,7 +302,7 @@ function Sheet({
                       <label key={t.value} className="cursor-pointer">
                         <input
                           type="radio"
-                          name="meetingType"
+                          name="groupMeetingType"
                           value={t.value}
                           checked={meetingType === t.value}
                           onChange={() => chooseType(t.value)}
@@ -285,9 +318,9 @@ function Sheet({
 
                 {meetingType === "general" && (
                   <div>
-                    <Label htmlFor="pm-label">Call it what?</Label>
+                    <Label htmlFor="gpm-label">Call it what?</Label>
                     <Input
-                      id="pm-label"
+                      id="gpm-label"
                       value={customLabel}
                       onChange={(e) => {
                         setCustomLabel(e.target.value);
@@ -298,7 +331,6 @@ function Sheet({
                   </div>
                 )}
 
-                {/* Dates */}
                 {!rule ? (
                   <div className="rounded-xl border border-gold-border bg-gold-soft px-4 py-3">
                     <p className="text-[13.5px] font-semibold text-[#6d5210]">
@@ -352,16 +384,16 @@ function Sheet({
                       ))}
                     </div>
                     <p className="mt-1.5 text-[12px] text-muted">
-                      Worked out from your availability and what&apos;s already booked. It
-                      can&apos;t see your Outlook calendar yet — check these before you send.
+                      Everyone gets both dates and answers for themselves. It can&apos;t see your
+                      Outlook calendar yet — check these before you send.
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <Label htmlFor="pm-location">Where (optional)</Label>
+                  <Label htmlFor="gpm-location">Where (optional)</Label>
                   <Input
-                    id="pm-location"
+                    id="gpm-location"
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
                     placeholder="e.g. Market Street Grill"
@@ -369,18 +401,18 @@ function Sheet({
                 </div>
 
                 <div>
-                  <Label htmlFor="pm-subject">Subject</Label>
+                  <Label htmlFor="gpm-subject">Subject</Label>
                   <Input
-                    id="pm-subject"
+                    id="gpm-subject"
                     value={subject}
                     onChange={(e) => setTextOverride({ subject: e.target.value, body })}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="pm-body">Message</Label>
+                  <Label htmlFor="gpm-body">Message</Label>
                   <textarea
-                    id="pm-body"
+                    id="gpm-body"
                     value={body}
                     rows={7}
                     onChange={(e) => setTextOverride({ subject, body: e.target.value })}
@@ -397,10 +429,10 @@ function Sheet({
                   )}
                 </div>
 
-                {!context.lender.email && (
-                  <p className="text-[13px] text-muted">
-                    No email address on file for {context.lender.firstName} — copy the message and
-                    send it however you normally would.
+                {selected.length > 0 && (
+                  <p className="text-[12.5px] text-muted">
+                    One email to {formatNameList(chosen.map((l) => l.firstName))}, all on the same
+                    message so they can see who else is coming.
                   </p>
                 )}
 
@@ -410,11 +442,11 @@ function Sheet({
 
             <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-border bg-surface px-5 py-3.5">
               <a
-                href={mailto}
-                onClick={() => persist(true)}
+                href={ready ? mailto : "#"}
+                onClick={() => ready && persist(true)}
                 className={cn(
                   "inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary px-4 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(30,91,255,0.3)] transition-colors hover:bg-primary/90",
-                  (pending || slots.length === 0) && "pointer-events-none opacity-50",
+                  (pending || !ready) && "pointer-events-none opacity-50",
                 )}
               >
                 <Mail className="h-4 w-4" />
@@ -438,7 +470,7 @@ function Sheet({
                 type="button"
                 size="touch"
                 variant="secondary"
-                disabled={pending || slots.length === 0}
+                disabled={pending || !ready}
                 onClick={() => persist(false)}
               >
                 <CalendarPlus className="h-4 w-4" />
@@ -452,5 +484,35 @@ function Sheet({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The button on an institution: propose one meeting to several of its people.
+ */
+export function ProposeGroupMeeting({
+  institutionId,
+  className,
+}: {
+  institutionId: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <Button
+        type="button"
+        size="touch"
+        variant="secondary"
+        className={className}
+        onClick={() => setIsOpen(true)}
+      >
+        <Users className="h-4 w-4" />
+        Propose a group meeting
+      </Button>
+      {isOpen && (
+        <GroupProposalSheet institutionId={institutionId} onClose={() => setIsOpen(false)} />
+      )}
+    </>
   );
 }

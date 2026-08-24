@@ -4,6 +4,8 @@ import { Badge, CoverageBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { getLendersWithCoverage } from "@/lib/data";
+import { getGroupProposals } from "@/lib/dashboard";
+import { GroupProposalsNeedingAttention } from "./group-proposals";
 import { TERRITORIES } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +30,11 @@ export default async function NeedsAttentionPage({
   const { f = "all", territory } = await searchParams;
   const supabase = await createClient();
 
-  const [lenders, loans, promises] = await Promise.all([
+  const [lenders, loans, promises, groupProposals] = await Promise.all([
     getLendersWithCoverage(),
     supabase.from("active_loans").select("lender_id").is("deleted_at", null),
     supabase.from("promises").select("lender_id").eq("status", "open").is("deleted_at", null),
+    getGroupProposals(),
   ]);
 
   const loanSet = new Set((loans.data ?? []).map((r) => r.lender_id));
@@ -75,6 +78,10 @@ export default async function NeedsAttentionPage({
         title="Needs Attention"
         description={`${queue.length} lender${queue.length === 1 ? "" : "s"} slipping past the 30-day goal`}
       />
+
+      {/* A group ask with a yes on it has a date he could take. That belongs
+          in front of him, not behind a click on the dashboard. */}
+      <GroupProposalsNeedingAttention proposals={groupProposals} />
 
       <div className="mb-3 flex flex-wrap gap-1.5">
         {STATUS_FILTERS.map((s) => (
